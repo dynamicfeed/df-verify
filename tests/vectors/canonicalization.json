@@ -1,0 +1,81 @@
+{
+  "standard": "DF-VERIFY/1",
+  "canonicalization": "json-sorted-compact",
+  "note": "canonical = UTF-8 bytes of this string. Equivalent to Python json.dumps(payload_without_signature, sort_keys=True, separators=(',',':')).",
+  "vectors": [
+    {
+      "name": "empty object",
+      "payload": {},
+      "canonical": "{}"
+    },
+    {
+      "name": "key ordering — sorted recursively",
+      "payload": {
+        "b": 1,
+        "a": 2
+      },
+      "canonical": "{\"a\":2,\"b\":1}"
+    },
+    {
+      "name": "nested objects + arrays (arrays NOT reordered)",
+      "payload": {
+        "z": [
+          3,
+          2,
+          1
+        ],
+        "a": {
+          "y": 1,
+          "x": 2
+        }
+      },
+      "canonical": "{\"a\":{\"x\":2,\"y\":1},\"z\":[3,2,1]}"
+    },
+    {
+      "name": "non-ASCII escaped as \\uXXXX",
+      "payload": {
+        "note": "café · 日本語"
+      },
+      "canonical": "{\"note\":\"caf\\u00e9 \\u00b7 \\u65e5\\u672c\\u8a9e\"}"
+    },
+    {
+      "name": "astral char as UTF-16 surrogate pair",
+      "payload": {
+        "icon": "😀"
+      },
+      "canonical": "{\"icon\":\"\\ud83d\\ude00\"}"
+    },
+    {
+      "name": "numbers verbatim (int, decimal, negative, zero)",
+      "payload": {
+        "count": 21,
+        "lat": 51.5,
+        "lon": -0.12,
+        "zero": 0,
+        "big": 1000000
+      },
+      "canonical": "{\"big\":1000000,\"count\":21,\"lat\":51.5,\"lon\":-0.12,\"zero\":0}"
+    },
+    {
+      "name": "booleans + null",
+      "payload": {
+        "ok": true,
+        "no": false,
+        "na": null
+      },
+      "canonical": "{\"na\":null,\"no\":false,\"ok\":true}"
+    },
+    {
+      "name": "top-level signature field is stripped before canonicalizing",
+      "payload": {
+        "x": 1,
+        "y": 2,
+        "signature": {
+          "alg": "Ed25519",
+          "sig": "AAAA"
+        }
+      },
+      "canonical": "{\"x\":1,\"y\":2}"
+    }
+  ]
+}
