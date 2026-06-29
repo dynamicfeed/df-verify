@@ -11,6 +11,7 @@ A second rung, refined in [in-toto/attestation#554](https://github.com/in-toto/a
 | [`okf-reliability-v1.schema.json`](okf-reliability-v1.schema.json) | JSON Schema (draft 2020-12) for the reliability object. Canonical copy at https://dynamicfeed.ai/schemas/okf-reliability-v1.json |
 | [`verify_reliability.py`](verify_reliability.py) | Zero-dependency Python reference validator (stdlib only) |
 | [`verify_reliability.js`](verify_reliability.js) | Zero-dependency JavaScript validator (node + browser) |
+| [`conformance-vectors.json`](conformance-vectors.json) | Portable pass/fail vectors (`{label, expect, reliability}`) covering all five honesty rules. Run them against any validator to confirm an independent implementation agrees. |
 | [`examples/`](examples) | Worked example bundle (live single-source, corroborated, conflict, floor, and both vantages) |
 
 ## Run it
