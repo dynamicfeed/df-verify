@@ -25,6 +25,7 @@ import sys
 BANDS = {"HIGH", "MEDIUM", "LOW", "UNVERIFIED"}
 BASES = {"live-source", "partner-attested", "vendor-doc", "forecast", "computed", "inferred"}
 STATES = {"fresh", "stale", "unavailable"}
+VANTAGES = {"independent", "producer-reported"}
 
 
 def check(o: dict) -> list[tuple[str, bool, str]]:
@@ -96,6 +97,11 @@ def check(o: dict) -> list[tuple[str, bool, str]]:
     st = freshness.get("state")
     if st is not None:
         ck("freshness-state", st in STATES, f"freshness.state={st!r} must be one of {sorted(STATES)}")
+
+    # observation vantage (orthogonal to reliability; corroboration != independence)
+    vant = o.get("vantage")
+    if vant is not None:
+        ck("vantage-enum", vant in VANTAGES, f"vantage={vant!r} must be one of {sorted(VANTAGES)}")
 
     return r
 

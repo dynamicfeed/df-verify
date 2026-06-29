@@ -31,6 +31,10 @@
       "description": "True ONLY when independently corroborated by 2+ sources (and, for live producers, fresh). Deliberately NOT coupled to signing: a signed claim can be unverified. When true, `sources` must be >= 2.",
       "type": "boolean"
     },
+    "vantage": {
+      "description": "Observational vantage, a THIRD axis distinct from integrity and reliability (refined in in-toto/attestation#554): was the record made INDEPENDENTLY of the producer (`independent`), or is it the producer attesting its own observation (`producer-reported`)? Corroboration is NOT independence: multiple sources can sit on the producer's side, so a signed, corroborated, fresh reading can still be producer-reported. The honesty ladder is signed != verified != observed-independently. A verifier needing independent observation should require `vantage: independent` rather than read a high score or a signature as independence.",
+      "enum": ["independent", "producer-reported"]
+    },
     "conflict": {
       "description": "First-class disagreement state, distinct from merely uncorroborated. While `disputed` is true, both contradicting positions are retained and `resolution` records what the trust ordering picked without discarding the loser. A resolved/collapsed conflict (disputed:false) may carry one position or none.",
       "type": "object",

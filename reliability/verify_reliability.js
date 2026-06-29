@@ -14,6 +14,7 @@
   var BANDS = ["HIGH", "MEDIUM", "LOW", "UNVERIFIED"];
   var BASES = ["live-source", "partner-attested", "vendor-doc", "forecast", "computed", "inferred"];
   var STATES = ["fresh", "stale", "unavailable"];
+  var VANTAGES = ["independent", "producer-reported"];
   var has = function (a, v) { return a.indexOf(v) !== -1; };
   var isObj = function (v) { return v && typeof v === "object" && !Array.isArray(v); };
 
@@ -66,6 +67,9 @@
 
     if (freshness.state !== undefined && freshness.state !== null)
       ck("freshness-state", has(STATES, freshness.state), "freshness.state=" + JSON.stringify(freshness.state) + " must be one of " + STATES.join("|"));
+
+    if (o.vantage !== undefined && o.vantage !== null)
+      ck("vantage-enum", has(VANTAGES, o.vantage), "vantage=" + JSON.stringify(o.vantage) + " must be one of " + VANTAGES.join("|"));
 
     return r;
   }
