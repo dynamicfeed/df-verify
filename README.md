@@ -59,3 +59,7 @@ Both reference verifiers reproduce every vector — same canonical bytes, same s
 ## License
 
 MIT.
+
+## Reliability axis
+
+Beyond signing *what* was said, the [`reliability/`](reliability) toolkit grades *how much to believe it* — the OKF reliability object (schema + zero-dep Python & JS validators), enforcing `signed != verified`. See [reliability/README.md](reliability/README.md).

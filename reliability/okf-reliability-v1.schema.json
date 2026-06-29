@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dynamicfeed.ai/schemas/okf-reliability-v1.json",
+  "title": "OKF reliability object (v1 draft)",
+  "description": "Optional reliability axis for an OKF concept/claim: how much to believe the claim itself, distinct from integrity (#140) and citation (#92/#94). Maturity ladder, not a mandate: the floor is `confidence` + `basis`; everything else is opt-in. Honesty rules the schema encodes as far as JSON Schema allows: (1) signed != verified, so `signals.signed` is never coupled to `verified`; (2) `verified:true` must assert at least 2 sources; (3) an UNVERIFIED band or a disputed conflict cannot be `verified`; (4) when a computed `score` is present it must be ordinally coherent with the band. NOTE the band is NOT a pure re-banding of `score`: it also reflects a corroboration ceiling (a single-source reading caps at MEDIUM even when its raw score is high), which is why MEDIUM/LOW carry no score-range floor.",
+  "type": "object",
+  "required": ["confidence", "basis"],
+  "additionalProperties": true,
+  "$comment": "additionalProperties is intentionally open (maturity-ladder philosophy). Named CROSS-concept edges (supersedes / contradicts) MUST NOT appear on this object; they are typed links that live in #158/#148. This object covers only INTRA-concept reliability.",
+  "properties": {
+    "confidence": {
+      "description": "Ordinal band. The interoperable surface everyone filters on.",
+      "enum": ["HIGH", "MEDIUM", "LOW", "UNVERIFIED"]
+    },
+    "basis": {
+      "description": "How the claim was obtained. Closed union of the live-data and authored-corpus vocabularies, ordered most to least authoritative when sources disagree: live-source > partner-attested > vendor-doc > forecast > computed > inferred. A new basis term requires cross-shape agreement and a schema version bump (unknown values fail, unlike the open additionalProperties elsewhere).",
+      "enum": ["live-source", "partner-attested", "vendor-doc", "forecast", "computed", "inferred"]
+    },
+    "score": {
+      "description": "Optional computed companion to `confidence`. Present ONLY when actually computed from `signals` (recomputable, not opaque). Absent means 'graded, not computed'.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "sources": {
+      "description": "Number of independent sources behind this reading.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "verified": {
+      "description": "True ONLY when independently corroborated by 2+ sources (and, for live producers, fresh). Deliberately NOT coupled to signing: a signed claim can be unverified. When true, `sources` must be >= 2.",
+      "type": "boolean"
+    },
+    "conflict": {
+      "description": "First-class disagreement state, distinct from merely uncorroborated. While `disputed` is true, both contradicting positions are retained and `resolution` records what the trust ordering picked without discarding the loser. A resolved/collapsed conflict (disputed:false) may carry one position or none.",
+      "type": "object",
+      "required": ["disputed"],
+      "additionalProperties": true,
+      "properties": {
+        "disputed": { "type": "boolean" },
+        "positions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["statement", "basis"],
+            "additionalProperties": true,
+            "properties": {
+              "statement": { "type": "string" },
+              "basis": { "$ref": "#/properties/basis" },
+              "source": { "type": "string" }
+            }
+          }
+        },
+        "resolution": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "$comment": "A live dispute must retain both sides and say how it was resolved; a resolved conflict need not.",
+          "if": { "properties": { "disputed": { "const": true } }, "required": ["disputed"] },
+          "then": {
+            "required": ["positions", "resolution"],
+            "properties": { "positions": { "minItems": 2 } }
+          }
+        }
+      ]
+    },
+    "validity": {
+      "description": "Applicability window: WHEN/where the claim holds, a separate clock from `freshness` (measurement recency). Often version-keyed, which a wall-clock `expires` cannot express. Anonymous expiry (a value that simply stops holding) lives here as `valid_until`; named supersession is a typed cross-concept edge elsewhere (#158/#148). `valid_from`/`valid_until` are free strings so a version like '5.0' or a date both fit.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "keyed_by": { "enum": ["version", "date"] },
+        "valid_from": { "type": ["string", "null"] },
+        "valid_until": { "type": ["string", "null"] }
+      }
+    },
+    "freshness": {
+      "description": "Measurement recency, a separate clock from `validity`. Right for a live metric; a producer fills this and may omit `validity`. NOTE: JSON Schema treats `format: date-time` as advisory by default, so consumers should assert timestamp formats themselves.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "as_of": { "type": "string", "format": "date-time" },
+        "state": { "enum": ["fresh", "stale", "unavailable"] },
+        "expires": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "signals": {
+      "description": "The transparent inputs `score`/`confidence` are recomputed from. `signed` is integrity only and is intentionally independent of `verified`. Conflict is NOT carried here: `conflict.disputed` is the single source of truth (if a `conflict` key appears here it must agree with it).",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "signed": { "type": "boolean" },
+        "corroborated": { "type": "boolean" },
+        "fresh": { "type": "boolean" }
+      }
+    },
+    "assessed_at": {
+      "description": "When the grade was last assessed, distinct from `freshness.as_of` (when measured). A recompute-per-read producer sets this to read time and omits `lifecycle.history`; a stored-ladder producer logs transitions in `lifecycle`. (format date-time is advisory.)",
+      "type": "string",
+      "format": "date-time"
+    },
+    "lifecycle": {
+      "description": "Optional stored grade history for producers that persist a promotion/demotion ladder. Recompute-per-read producers omit this. Each transition records at minimum when (`at`, free string to allow version-keyed ladders) and to which band (`confidence`).",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "stage": { "type": "string" },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "confidence"],
+            "additionalProperties": true,
+            "properties": {
+              "at": { "type": "string" },
+              "confidence": { "$ref": "#/properties/confidence" },
+              "basis": { "$ref": "#/properties/basis" },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$comment": "An UNVERIFIED band cannot claim verified:true, and any computed score must be low.",
+      "if": { "properties": { "confidence": { "const": "UNVERIFIED" } }, "required": ["confidence"] },
+      "then": { "properties": { "verified": { "const": false }, "score": { "exclusiveMaximum": 0.5 } } }
+    },
+    {
+      "$comment": "A disputed conflict is not independently corroborated, so it cannot be verified:true.",
+      "if": {
+        "properties": { "conflict": { "properties": { "disputed": { "const": true } }, "required": ["disputed"] } },
+        "required": ["conflict"]
+      },
+      "then": { "properties": { "verified": { "const": false } } }
+    },
+    {
+      "$comment": "Closes the corroboration lie: verified:true must assert at least 2 sources. Cannot force independence/freshness in schema; closes the numeric claim.",
+      "if": { "properties": { "verified": { "const": true } }, "required": ["verified"] },
+      "then": { "required": ["sources"], "properties": { "sources": { "minimum": 2 } } }
+    },
+    {
+      "$comment": "Gross band/score incoherence guard: a HIGH band cannot ride a very low computed score. MEDIUM/LOW are intentionally unconstrained because the band also reflects a corroboration ceiling, not just the score.",
+      "if": { "properties": { "confidence": { "const": "HIGH" } }, "required": ["confidence"] },
+      "then": { "properties": { "score": { "minimum": 0.5 } } }
+    },
+    {
+      "$comment": "If a redundant signals.conflict is carried, it must agree with the canonical conflict.disputed.",
+      "if": {
+        "properties": { "conflict": { "properties": { "disputed": { "const": true } }, "required": ["disputed"] } },
+        "required": ["conflict"]
+      },
+      "then": { "properties": { "signals": { "properties": { "conflict": { "const": true } } } } }
+    }
+  ]
+}
