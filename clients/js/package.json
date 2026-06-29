@@ -1,0 +1,57 @@
+{
+  "name": "@dynamicfeed/verify",
+  "version": "0.1.0",
+  "description": "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses, in any JavaScript runtime. No account, no runtime trust in the issuer.",
+  "type": "module",
+  "main": "index.js",
+  "module": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    }
+  },
+  "bin": {
+    "dynamicfeed-verify": "./cli.js"
+  },
+  "files": [
+    "index.js",
+    "cli.js",
+    "index.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node ../../tests/verify_vectors.mjs"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ed25519",
+    "signature",
+    "verification",
+    "provenance",
+    "attestation",
+    "ai",
+    "dynamic-feed",
+    "df-verify"
+  ],
+  "homepage": "https://dynamicfeed.ai/standard",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dynamicfeed/df-verify.git",
+    "directory": "clients/js"
+  },
+  "bugs": {
+    "url": "https://github.com/dynamicfeed/df-verify/issues"
+  },
+  "license": "MIT",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

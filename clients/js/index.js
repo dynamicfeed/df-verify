@@ -3,8 +3,8 @@
 // Runtime-agnostic ESM (Node >=18, Deno, Bun, browsers/bundlers). Reproduces the server's
 // canonicalization BYTE-FOR-BYTE — json-sorted-compact, Python `ensure_ascii` escaping, the
 // `signature` field stripped, numbers preserved verbatim via a lossless parse — then verifies the
-// detached Ed25519 signature against the published JWKS using @noble/ed25519. Proven identical to
-// the Python (scripts/verify_awareness.py) and in-browser (web/verify.js) reference verifiers.
+// detached Ed25519 signature against the published key set using @noble/ed25519. Proven byte-identical
+// to the Python reference verifier (clients/python) over the shared conformance vectors (tests/vectors).
 //
 // Spec: https://dynamicfeed.ai/standard
 import * as ed from '@noble/ed25519';

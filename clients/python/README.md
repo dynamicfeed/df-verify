@@ -1,6 +1,6 @@
 # dynamicfeed-verify
 
-Verify [Dynamic Feed](https://dynamicfeed.ai) **DF-VERIFY/1** Ed25519-signed responses — independently, in one line. No account, no dependency on Dynamic Feed at runtime beyond fetching the public key. You can verify, even against us.
+Verify [Dynamic Feed](https://dynamicfeed.ai) **DF-VERIFY/1** Ed25519-signed responses independently, in one line. No account, no dependency on Dynamic Feed at runtime beyond fetching the public key. You can verify, even against us.
 
 Reference implementation of the [DF-VERIFY/1 standard](https://dynamicfeed.ai/standard).
 
@@ -40,7 +40,7 @@ dynamicfeed-verify - < response.json     # verify a saved signed response
 A signed response carries a `signature` block (`alg`, `key_id`, `canonicalization`, `sig`). Verification:
 
 1. Drop the `signature` field; keep the rest as the payload.
-2. Canonicalize — JSON, keys sorted recursively, compact separators (`,` `:`), UTF-8. Equivalent to `json.dumps(payload, sort_keys=True, separators=(",", ":"))`.
+2. Canonicalize: JSON, keys sorted recursively, compact separators (`,` `:`), UTF-8. Equivalent to `json.dumps(payload, sort_keys=True, separators=(",", ":"))`.
 3. Fetch the public key from `https://dynamicfeed.ai/.well-known/keys` and look up `signature.key_id`.
 4. Verify the Ed25519 signature over the canonical bytes. Change one byte → it fails.
 

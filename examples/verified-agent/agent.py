@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-verified-agent — an example AI agent that VERIFIES the world before it acts.
+verified-agent: an example AI agent that VERIFIES the world before it acts.
 
 The DF-VERIFY/1 pattern: an autonomous agent must not act on world-state it cannot cryptographically
 verify. This fetches a signed go / caution / no-go verdict from Dynamic Feed, verifies the Ed25519
@@ -67,13 +67,13 @@ def agent_step(env: dict, base: str = BASE, jwks: dict | None = None) -> bool:
     """Verify the world-state, THEN decide whether to act. The whole point: never act on unverified data."""
     res = verify(env, base, jwks)
     if not res["ok"]:
-        print(f"⛔  REFUSING TO ACT — unverifiable world-state: {res['error']}")
+        print(f"⛔  REFUSING TO ACT. Unverifiable world-state: {res['error']}")
         print("    An agent must never act on data it cannot prove is authentic and unaltered.")
         return False
     if res["verdict"] == "no-go":
-        print(f"🛑  STAND DOWN — verified NO-GO verdict (signed by {res['key_id']}).")
+        print(f"🛑  STAND DOWN: verified NO-GO verdict (signed by {res['key_id']}).")
         return False
-    print(f"✅  VERIFIED (signed by {res['key_id']}) · verdict={res['verdict']!r} — proceeding with the action.")
+    print(f"✅  VERIFIED (signed by {res['key_id']}) · verdict={res['verdict']!r}, proceeding with the action.")
     # >>> the agent's real action goes here: move, trade, file, dispatch, ... <<<
     return True
 

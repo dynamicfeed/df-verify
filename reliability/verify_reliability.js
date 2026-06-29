@@ -3,8 +3,8 @@
 //
 // Spec:   https://dynamicfeed.ai/schemas/okf-reliability-v1.json
 // Origin: the reliability axis proposed in GoogleCloudPlatform/knowledge-catalog#151 and in-toto/attestation#554.
-// Mirror of scripts/verify_reliability.py. The cardinal rule it enforces: SIGNED != VERIFIED — a
-// signature proves integrity, not truth; `verified` is earned only by independent corroboration.
+// Mirror of verify_reliability.py in this directory. The cardinal rule it enforces: SIGNED != VERIFIED,
+// a signature proves integrity, not truth; `verified` is earned only by independent corroboration.
 //
 // Node:    node verify_reliability.js <file.json>   |   node verify_reliability.js --selftest
 // Browser: window.DFReliability.validate(obj)  ->  { ok, results }
