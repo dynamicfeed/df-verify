@@ -12,6 +12,7 @@ A second rung, refined in [in-toto/attestation#554](https://github.com/in-toto/a
 | [`verify_reliability.py`](verify_reliability.py) | Zero-dependency Python reference validator (stdlib only) |
 | [`verify_reliability.js`](verify_reliability.js) | Zero-dependency JavaScript validator (node + browser) |
 | [`conformance-vectors.json`](conformance-vectors.json) | Portable pass/fail vectors (`{label, expect, reliability}`) covering all five honesty rules. Run them against any validator to confirm an independent implementation agrees. |
+| [`a2a-artifact-vectors.json`](a2a-artifact-vectors.json) | Artifact-level vectors: full A2A `Artifact.metadata` field tables (`authorship` / `provenance_ref?` / `reliability` as separable siblings) for the cross-implementation envelope test in a2aproject/A2A#2011. |
 | [`examples/`](examples) | Worked example bundle (live single-source, corroborated, conflict, floor, and both vantages) |
 
 ## Run it

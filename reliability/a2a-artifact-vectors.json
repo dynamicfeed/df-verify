@@ -1,0 +1,43 @@
+{
+  "$about": "Artifact-level conformance vectors for the A2A artifact-provenance field table forming in a2aproject/A2A#2011. Each vector is a full A2A Artifact whose `Artifact.metadata` carries three flat, separable siblings outside the signed fact bytes, so no sibling can perturb the artifact hash another verifier computes. A conformant consumer checks each axis independently and never lets one alone promote a reading to trusted. This complements conformance-vectors.json (which covers the reliability object alone) by exercising the whole envelope and both states of the anchor sibling.",
+  "field_table": {
+    "authorship": "Ed25519 signature over the canonical fact (who + integrity). Verify against the key set at `metadata.verify`. canonicalization: json-sorted-compact.",
+    "provenance_ref": "OPTIONAL existence-in-time commitment (e.g. markovian-provenance/v1: merkle_root, anchor, verifier_url). Two honest states: ABSENT when nothing is anchored, PRESENT when a snapshot is. Its presence proves the bytes existed at a time, never that they are correct.",
+    "reliability": "okf-reliability-v1 object (data quality + observation vantage). Validate against https://dynamicfeed.ai/schemas/okf-reliability-v1.json"
+  },
+  "checks": "For each vector: (1) metadata.reliability MUST validate against okf-reliability-v1; (2) metadata.authorship MUST be a well-formed signature block {alg,key_id,canonicalization,sig}; (3) if metadata.provenance_ref is present it MUST be re-checkable against its own verifier; (4) none of the three siblings appears inside the signed fact bytes.",
+  "vectors": [
+    {
+      "label": "dynamicfeed.ai: single-source live reading, anchor ABSENT (honest no-anchor state)",
+      "expect": "valid",
+      "producer": "dynamicfeed.ai",
+      "note": "Real /a2a artifact. provenance_ref is absent because nothing was anchored; reliability sits at MEDIUM / producer-reported (signed, fresh, one source, so not verified and not independent).",
+      "artifact": {
+        "artifactId": "eb8e8ef3-3db9-41bb-9e53-e8d2c746be42",
+        "name": "us_economy result",
+        "extensions": ["https://dynamicfeed.ai/a2a/ext/provenance/v1"],
+        "metadata": {
+          "authorship": {
+            "alg": "Ed25519",
+            "key_id": "df-ed25519-4cb32e72f333",
+            "canonicalization": "json-sorted-compact",
+            "sig": "quVFirLVSmSZr2KtEjfCgkk1-EAfs_UWYLwH5R4WLNFcaqd86Hk8b5jp9CmW6CIcfKV4dvz-HdGXfWJ7p3ucBw=="
+          },
+          "verify": "https://dynamicfeed.ai/.well-known/keys",
+          "reliability": {
+            "type": "okf-reliability-v1",
+            "confidence": "MEDIUM",
+            "basis": "live-source",
+            "score": 0.8,
+            "sources": 1,
+            "verified": false,
+            "vantage": "producer-reported",
+            "freshness": { "state": "fresh" },
+            "signals": { "signed": true, "corroborated": false, "fresh": true }
+          }
+        }
+      }
+    }
+  ],
+  "contribute": "Anchor-PRESENT vectors are welcome from anchoring implementations: a full artifact whose metadata.provenance_ref carries a real commitment (e.g. markovian-provenance/v1 with merkle_root + anchor + account-free verifier_url), so the suite covers both states of the anchor sibling across the whole envelope. Open a PR adding one here; the reliability and authorship siblings stay checked the same way."
+}
