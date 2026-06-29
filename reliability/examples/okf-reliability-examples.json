@@ -1,6 +1,6 @@
 {
   "schema": "https://dynamicfeed.ai/schemas/okf-reliability-v1.json",
-  "note": "Worked example bundle from the signed-okf (Dynamic Feed) live-data shape, for the three-way cross-check. Instances 1-2 are real DF /v1/facts output mapped to the reliability object; instance 3 is the maturity-ladder floor; instance 4 is a live conflict case.",
+  "note": "Worked example bundle from the signed-okf (Dynamic Feed) live-data shape, for the three-way cross-check. Instances 1-2 are real DF /v1/facts output mapped to the reliability object (note both carry vantage=producer-reported: a live producer attesting its own observation, even when corroborated); instance 3 is the maturity-ladder floor; instance 4 is a live conflict case; instance 5 is illustrative (NOT DF) showing vantage=independent, a record made independently of the producer.",
   "examples": [
     {
       "label": "live single-source fact (real: us_economy cpi, BLS, 2026-05)",
@@ -10,19 +10,21 @@
         "score": 0.8,
         "sources": 1,
         "verified": false,
+        "vantage": "producer-reported",
         "freshness": { "as_of": "2026-06-29T00:00:00Z", "state": "fresh" },
         "signals": { "signed": true, "corroborated": false, "fresh": true, "conflict": false },
         "assessed_at": "2026-06-29T00:00:00Z"
       }
     },
     {
-      "label": "live corroborated fact (multi-source agreement)",
+      "label": "live corroborated fact (multi-source agreement, yet still producer-reported)",
       "reliability": {
         "confidence": "HIGH",
         "basis": "live-source",
         "score": 0.95,
         "sources": 3,
         "verified": true,
+        "vantage": "producer-reported",
         "freshness": { "as_of": "2026-06-29T11:00:00Z", "state": "fresh", "expires": "2026-06-29T12:00:00Z" },
         "signals": { "signed": true, "corroborated": true, "fresh": true, "conflict": false },
         "assessed_at": "2026-06-29T11:00:00Z"
@@ -54,6 +56,20 @@
         "freshness": { "as_of": "2026-06-29T10:50:00Z", "state": "fresh" },
         "signals": { "signed": true, "corroborated": false, "fresh": true, "conflict": true },
         "assessed_at": "2026-06-29T10:50:00Z"
+      }
+    },
+    {
+      "label": "illustrative (NOT DF): independently observed reading (vantage=independent)",
+      "reliability": {
+        "confidence": "HIGH",
+        "basis": "live-source",
+        "score": 0.92,
+        "sources": 2,
+        "verified": true,
+        "vantage": "independent",
+        "freshness": { "as_of": "2026-06-29T11:30:00Z", "state": "fresh" },
+        "signals": { "signed": true, "corroborated": true, "fresh": true, "conflict": false },
+        "assessed_at": "2026-06-29T11:30:00Z"
       }
     }
   ]
