@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://dynamicfeed.ai/schemas/okf-reliability-v1.json",
   "title": "OKF reliability object (v1 draft)",
-  "description": "Optional reliability axis for an OKF concept/claim: how much to believe the claim itself, distinct from integrity (#140) and citation (#92/#94). Maturity ladder, not a mandate: the floor is `confidence` + `basis`; everything else is opt-in. Honesty rules the schema encodes as far as JSON Schema allows: (1) signed != verified, so `signals.signed` is never coupled to `verified`; (2) `verified:true` must assert at least 2 sources; (3) an UNVERIFIED band or a disputed conflict cannot be `verified`; (4) when a computed `score` is present it must be ordinally coherent with the band. NOTE the band is NOT a pure re-banding of `score`: it also reflects a corroboration ceiling (a single-source reading caps at MEDIUM even when its raw score is high), which is why MEDIUM/LOW carry no score-range floor.",
+  "description": "Optional reliability axis for an OKF concept/claim: how much to believe the claim itself, distinct from integrity (#140) and citation (#92/#94). Maturity ladder, not a mandate: the floor is `confidence` + `basis`; everything else is opt-in. Honesty rules the schema encodes as far as JSON Schema allows: (1) signed != verified, so `signals.signed` is never coupled to `verified`; (2) `verified:true` must assert at least 2 sources; (3) an UNVERIFIED band or a disputed conflict cannot be `verified`; (4) when a computed `score` is present it must be ordinally coherent with the band; (5) a disputed conflict caps the band at MEDIUM (HIGH excluded), since an open disagreement is a corroboration failure, while still letting the prevailing position carry up to MEDIUM. NOTE the band is NOT a pure re-banding of `score`: it also reflects a corroboration ceiling (a single-source reading, or a dispute, caps at MEDIUM even when its raw score is high), which is why MEDIUM/LOW carry no score-range floor.",
   "type": "object",
   "required": ["confidence", "basis"],
   "additionalProperties": true,
@@ -157,6 +157,14 @@
         "required": ["conflict"]
       },
       "then": { "properties": { "signals": { "properties": { "conflict": { "const": true } } } } }
+    },
+    {
+      "$comment": "A disputed conflict caps the confidence band at MEDIUM (HIGH excluded): an open disagreement is a corroboration failure, so the claim cannot be HIGH. The prevailing position under the trust ordering may still carry up to MEDIUM, or a conservative producer may floor to LOW; either way disputed:true stays flagged. (Convergence with the multi-version-corpus shape in #158.)",
+      "if": {
+        "properties": { "conflict": { "properties": { "disputed": { "const": true } }, "required": ["disputed"] } },
+        "required": ["conflict"]
+      },
+      "then": { "properties": { "confidence": { "enum": ["MEDIUM", "LOW", "UNVERIFIED"] } } }
     }
   ]
 }

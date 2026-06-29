@@ -79,6 +79,10 @@ def check(o: dict) -> list[tuple[str, bool, str]]:
         ck("conflict-disputed-bool", isinstance(disputed, bool), f"conflict.disputed={disputed!r} must be bool")
         if disputed is True:
             ck("disputed-not-verified", verified is not True, "conflict.disputed=true but verified=true")
+            # honesty rule: a dispute is a corroboration failure, so the band caps at MEDIUM (HIGH excluded);
+            # the prevailing position may carry up to MEDIUM, or a conservative producer may floor to LOW.
+            ck("disputed-band-capped", conf in {"MEDIUM", "LOW", "UNVERIFIED"},
+               f"conflict.disputed=true but confidence={conf!r} (a dispute caps the band at MEDIUM; HIGH excluded)")
             pos = conflict.get("positions")
             ck("disputed-two-positions", isinstance(pos, list) and len(pos) >= 2,
                "conflict.disputed=true requires >= 2 positions (retain both sides)")
@@ -139,9 +143,17 @@ _GOOD = [
      "conflict": {"disputed": True, "resolution": "live prevails; both kept",
                   "positions": [{"statement": "42", "basis": "live-source"}, {"statement": "11", "basis": "vendor-doc"}]},
      "signals": {"conflict": True}},
+    {"confidence": "MEDIUM", "basis": "live-source", "sources": 2, "verified": False,                 # dispute capped at MEDIUM (clean live-source win)
+     "conflict": {"disputed": True, "resolution": "live-source prevails under the trust ordering; both kept",
+                  "positions": [{"statement": "42", "basis": "live-source"}, {"statement": "11", "basis": "vendor-doc"}]},
+     "signals": {"conflict": True}},
     {"confidence": "LOW", "basis": "inferred"},
 ]
 _BAD = [
+    {"confidence": "HIGH", "basis": "live-source", "score": 0.9, "sources": 2, "verified": False,    # disputed cannot be HIGH
+     "conflict": {"disputed": True, "resolution": "x",
+                  "positions": [{"statement": "a", "basis": "live-source"}, {"statement": "b", "basis": "vendor-doc"}]},
+     "signals": {"conflict": True}},
     {"confidence": "HIGH", "basis": "live-source", "verified": True, "sources": 0, "score": 0.9},   # verified w/o 2 sources
     {"confidence": "HIGH", "basis": "live-source", "score": 0.05},                                   # HIGH + low score
     {"confidence": "UNVERIFIED", "basis": "inferred", "verified": True},                             # UNVERIFIED + verified

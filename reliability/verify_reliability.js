@@ -54,6 +54,9 @@
       ck("conflict-disputed-bool", typeof disputed === "boolean", "conflict.disputed=" + JSON.stringify(disputed) + " must be bool");
       if (disputed === true) {
         ck("disputed-not-verified", verified !== true, "conflict.disputed=true but verified=true");
+        // a dispute is a corroboration failure, so the band caps at MEDIUM (HIGH excluded); the prevailing
+        // position may carry up to MEDIUM, or a conservative producer may floor to LOW.
+        ck("disputed-band-capped", has(["MEDIUM", "LOW", "UNVERIFIED"], conf), "conflict.disputed=true but confidence=" + JSON.stringify(conf) + " (a dispute caps the band at MEDIUM; HIGH excluded)");
         var pos = conflict.positions;
         ck("disputed-two-positions", Array.isArray(pos) && pos.length >= 2, "conflict.disputed=true requires >= 2 positions");
         if (Array.isArray(pos)) pos.forEach(function (p, i) {
@@ -97,9 +100,11 @@
     { confidence: "MEDIUM", basis: "live-source", score: 0.8, sources: 1, verified: false, freshness: { state: "fresh" }, signals: { signed: true, corroborated: false, fresh: true } },
     { confidence: "HIGH", basis: "live-source", score: 0.95, sources: 3, verified: true, signals: { signed: true, corroborated: true, fresh: true } },
     { confidence: "LOW", basis: "live-source", sources: 2, verified: false, conflict: { disputed: true, resolution: "live prevails; both kept", positions: [{ statement: "42", basis: "live-source" }, { statement: "11", basis: "vendor-doc" }] }, signals: { conflict: true } },
+    { confidence: "MEDIUM", basis: "live-source", sources: 2, verified: false, conflict: { disputed: true, resolution: "live-source prevails under the trust ordering; both kept", positions: [{ statement: "42", basis: "live-source" }, { statement: "11", basis: "vendor-doc" }] }, signals: { conflict: true } },
     { confidence: "LOW", basis: "inferred" }
   ];
   var BAD = [
+    { confidence: "HIGH", basis: "live-source", score: 0.9, sources: 2, verified: false, conflict: { disputed: true, resolution: "x", positions: [{ statement: "a", basis: "live-source" }, { statement: "b", basis: "vendor-doc" }] }, signals: { conflict: true } },
     { confidence: "HIGH", basis: "live-source", verified: true, sources: 0, score: 0.9 },
     { confidence: "HIGH", basis: "live-source", score: 0.05 },
     { confidence: "UNVERIFIED", basis: "inferred", verified: true },
