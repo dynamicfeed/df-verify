@@ -13,6 +13,7 @@ When an AI *acts* (it moves a robot, places a trade, files a claim), "trust me" 
 | [`clients/python`](clients/python) | `dynamicfeed-verify`: Python reference verifier (library + CLI) |
 | [`clients/js`](clients/js) | `@dynamicfeed/verify`: JavaScript/TypeScript verifier (Node, Deno, Bun, browser) |
 | [`clients/csharp`](clients/csharp) | C# reference verifier |
+| [`clients/rust`](clients/rust) | `dynamicfeed-verify`: Rust reference verifier (library + CLI), passes the shared vectors |
 | [`examples/verified-agent`](examples/verified-agent) | a runnable agent that verifies a signature **before it acts** |
 | [`tests/vectors`](tests/vectors) | language-agnostic conformance vectors + Python & JS harnesses |
 
