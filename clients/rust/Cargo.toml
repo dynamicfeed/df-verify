@@ -1,9 +1,11 @@
 [package]
 name = "dynamicfeed-verify"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses. No account, no runtime trust in the issuer."
 license = "MIT"
+readme = "README.md"
+homepage = "https://dynamicfeed.ai/standard"
 repository = "https://github.com/dynamicfeed/df-verify"
 keywords = ["ed25519", "signature", "verification", "provenance", "ai"]
 categories = ["cryptography", "command-line-utilities"]

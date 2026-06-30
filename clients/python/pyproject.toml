@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dynamicfeed-verify"
+version = "1.0.0"
+description = "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses. Offline, zero trust in the issuer."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "Dynamic Feed", email = "hello@dynamicfeed.ai" }]
+keywords = ["ed25519", "signature", "verification", "provenance", "ai-agents", "mcp", "df-verify"]
+dependencies = ["cryptography>=3.4"]
+
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://dynamicfeed.ai/standard"
+Source = "https://github.com/dynamicfeed/df-verify"
+Issues = "https://github.com/dynamicfeed/df-verify/issues"
+
+[project.scripts]
+dynamicfeed-verify = "dynamicfeed_verify.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["dynamicfeed_verify"]

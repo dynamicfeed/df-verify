@@ -1,6 +1,6 @@
 {
   "name": "@dynamicfeed/verify",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses, in any JavaScript runtime. No account, no runtime trust in the issuer.",
   "type": "module",
   "main": "index.js",
