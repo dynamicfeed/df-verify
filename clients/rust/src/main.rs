@@ -25,7 +25,9 @@ fn main() {
         };
         match verify(&env_v, &keys) {
             Ok(true) => {
-                println!("VERIFIED: signature is valid (bytes intact). Note: signed is not verified.");
+                println!(
+                    "VERIFIED: signature is valid (bytes intact). Note: signed is not verified."
+                );
                 process::exit(0);
             }
             Ok(false) => {

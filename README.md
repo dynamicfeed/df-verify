@@ -4,7 +4,11 @@ Reference implementation of **[DF-VERIFY/1](https://dynamicfeed.ai/standard)**, 
 
 When an AI *acts* (it moves a robot, places a trade, files a claim), "trust me" is not an audit trail. DF-VERIFY attaches an Ed25519 signature to any JSON response, publishes the verifying key openly, and lets anyone check it with **no account and no dependency on the issuer**. You can verify, even against the issuer.
 
+[![conformance](https://github.com/dynamicfeed/df-verify/actions/workflows/ci.yml/badge.svg)](https://github.com/dynamicfeed/df-verify/actions/workflows/ci.yml)
 [![DF-VERIFY/1](https://dynamicfeed.ai/badge.svg)](https://dynamicfeed.ai/standard)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+Every verifier here (Python, JavaScript, C#, Rust) is held to the **same language-agnostic conformance vectors**, run in CI on every commit. Canonicalization must match byte-for-byte, the authentic signature must verify, and the tampered twin must be rejected.
 
 ## What's here
 

@@ -27,6 +27,12 @@ fn authentic_verifies_and_tampered_is_rejected() {
     let authentic = parse(sv["authentic"]["envelope_text"].as_str().unwrap()).unwrap();
     let tampered = parse(sv["tampered"]["envelope_text"].as_str().unwrap()).unwrap();
 
-    assert!(verify(&authentic, keys).unwrap(), "authentic envelope must verify");
-    assert!(!verify(&tampered, keys).unwrap(), "tampered envelope must be rejected");
+    assert!(
+        verify(&authentic, keys).unwrap(),
+        "authentic envelope must verify"
+    );
+    assert!(
+        !verify(&tampered, keys).unwrap(),
+        "tampered envelope must be rejected"
+    );
 }

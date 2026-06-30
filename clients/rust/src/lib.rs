@@ -21,8 +21,10 @@ pub fn canonical(env: &Value) -> Vec<u8> {
         // strip the top-level `signature` field only
         Value::Object(map) => {
             out.push(b'{');
-            let sorted: BTreeMap<&String, &Value> =
-                map.iter().filter(|(k, _)| k.as_str() != "signature").collect();
+            let sorted: BTreeMap<&String, &Value> = map
+                .iter()
+                .filter(|(k, _)| k.as_str() != "signature")
+                .collect();
             for (i, (k, v)) in sorted.iter().enumerate() {
                 if i > 0 {
                     out.push(b',');
@@ -114,15 +116,30 @@ fn b64url(s: &str) -> Result<Vec<u8>, String> {
 /// Returns Ok(true) only if the detached Ed25519 signature over the canonical
 /// bytes checks out. Never panics on malformed input; returns Ok(false)/Err.
 pub fn verify(env: &Value, keys: &serde_json::Map<String, Value>) -> Result<bool, String> {
-    let sig = env.get("signature").and_then(|s| s.as_object()).ok_or("no signature object")?;
-    let key_id = sig.get("key_id").and_then(|v| v.as_str()).ok_or("no key_id")?;
+    let sig = env
+        .get("signature")
+        .and_then(|s| s.as_object())
+        .ok_or("no signature object")?;
+    let key_id = sig
+        .get("key_id")
+        .and_then(|v| v.as_str())
+        .ok_or("no key_id")?;
     let sig_b64 = sig.get("sig").and_then(|v| v.as_str()).ok_or("no sig")?;
-    let pk_b64 = keys.get(key_id).and_then(|v| v.as_str()).ok_or("unknown key_id")?;
+    let pk_b64 = keys
+        .get(key_id)
+        .and_then(|v| v.as_str())
+        .ok_or("unknown key_id")?;
 
     let pk_bytes = b64url(pk_b64)?;
     let sig_bytes = b64url(sig_b64)?;
-    let pk: [u8; 32] = pk_bytes.as_slice().try_into().map_err(|_| "public key not 32 bytes")?;
-    let sg: [u8; 64] = sig_bytes.as_slice().try_into().map_err(|_| "signature not 64 bytes")?;
+    let pk: [u8; 32] = pk_bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| "public key not 32 bytes")?;
+    let sg: [u8; 64] = sig_bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| "signature not 64 bytes")?;
 
     let vk = VerifyingKey::from_bytes(&pk).map_err(|e| format!("bad key: {e}"))?;
     let signature = Signature::from_bytes(&sg);
