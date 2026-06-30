@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
 authors = [{ name = "Dynamic Feed", email = "hello@dynamicfeed.ai" }]
-keywords = ["ed25519", "signature", "verification", "provenance", "ai-agents", "mcp", "df-verify"]
+keywords = ["ed25519", "signature-verification", "data-provenance", "offline-verification", "verifiable-data", "tamper-evident", "ai-agents", "mcp", "df-verify"]
 dependencies = ["cryptography>=3.4"]
 
 classifiers = [

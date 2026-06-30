@@ -32,11 +32,14 @@
   },
   "keywords": [
     "ed25519",
-    "signature",
-    "verification",
-    "provenance",
+    "signature-verification",
+    "data-provenance",
+    "offline-verification",
+    "verifiable-data",
+    "tamper-evident",
     "attestation",
-    "ai",
+    "mcp",
+    "ai-agents",
     "dynamic-feed",
     "df-verify"
   ],

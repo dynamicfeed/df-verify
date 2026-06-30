@@ -23,19 +23,28 @@ Every verifier here (Python, JavaScript, C#, Rust) is held to the **same languag
 
 ## Verify in 30 seconds
 
-**Python**
-```bash
-git clone https://github.com/dynamicfeed/df-verify && cd df-verify
-pip install cryptography
-python examples/verified-agent/agent.py            # verify a live verdict, then act
-python examples/verified-agent/agent.py --tamper   # altered after signing → the agent refuses to act
+Both reference verifiers are published. Install one and check a live signed verdict in two lines.
+
+**Python** (`pip install dynamicfeed-verify`)
+```python
+from dynamicfeed_verify import verify_live
+env, result = verify_live()        # fetch a fresh signed verdict and verify it
+assert result["ok"]                # tampered or unsigned: this fails
 ```
 
-**JavaScript**
+**JavaScript** (`npm i @dynamicfeed/verify`)
 ```js
 import { verifyLive } from '@dynamicfeed/verify';
 const { result } = await verifyLive();
 if (!result.ok) throw new Error(`unverified world-state: ${result.error}`);
+```
+
+**Or run the demo agent from source** (verify-before-act, and watch it refuse when tampered):
+```bash
+git clone https://github.com/dynamicfeed/df-verify && cd df-verify
+pip install cryptography
+python examples/verified-agent/agent.py            # verify a live verdict, then act
+python examples/verified-agent/agent.py --tamper   # altered after signing, the agent refuses to act
 ```
 
 ## How it works
