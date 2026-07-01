@@ -21,7 +21,7 @@ import urllib.request
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 DEFAULT_BASE = "https://dynamicfeed.ai"
 # Send an explicit, honest User-Agent: some WAFs (e.g. Cloudflare) 403 the default "Python-urllib".
 _UA = f"dynamicfeed-verify/{__version__} (+https://dynamicfeed.ai)"
@@ -63,9 +63,11 @@ def verify(envelope: dict, jwks: dict | None = None, base: str = DEFAULT_BASE) -
         Ed25519PublicKey.from_public_bytes(_b64d(keys[kid])).verify(_b64d(sig_b64), canonical(payload))
     except Exception as e:  # noqa: BLE001 — any failure means it did not verify
         return {"ok": False, "key_id": kid, "error": f"signature INVALID: {e}"}
+    v = envelope.get("verdict")
     return {
         "ok": True, "key_id": kid, "ephemeral": bool(sig.get("ephemeral_key")),
-        "verdict": (envelope.get("verdict") or {}).get("status"),
+        # awareness envelopes carry {"status": ...}; answer/v1 receipts carry a plain string
+        "verdict": v.get("status") if isinstance(v, dict) else v,
         "snapshot_id": envelope.get("snapshot_id"),
     }
 
