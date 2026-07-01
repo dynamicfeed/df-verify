@@ -21,8 +21,10 @@ import urllib.request
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 DEFAULT_BASE = "https://dynamicfeed.ai"
+# Send an explicit, honest User-Agent: some WAFs (e.g. Cloudflare) 403 the default "Python-urllib".
+_UA = f"dynamicfeed-verify/{__version__} (+https://dynamicfeed.ai)"
 
 
 def _b64d(s: str) -> bytes:
@@ -38,7 +40,8 @@ def canonical(payload: dict) -> bytes:
 
 def fetch_keys(base: str = DEFAULT_BASE, timeout: float = 20) -> dict:
     """Fetch the JWKS-style public-key map: ``{key_id: base64url(Ed25519 public key)}``."""
-    with urllib.request.urlopen(base.rstrip("/") + "/.well-known/keys", timeout=timeout) as r:
+    req = urllib.request.Request(base.rstrip("/") + "/.well-known/keys", headers={"User-Agent": _UA})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.load(r)
 
 
@@ -72,7 +75,7 @@ def verify_live(base: str = DEFAULT_BASE, robot: dict | None = None, location: d
     body = {"robot": robot or {"class": "aerial"}, "location": location or {"lat": 51.5, "lon": -0.12}}
     req = urllib.request.Request(
         base.rstrip("/") + "/v1/awareness",
-        data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
+        data=json.dumps(body).encode(), headers={"Content-Type": "application/json", "User-Agent": _UA})
     with urllib.request.urlopen(req, timeout=25) as r:
         env = json.load(r)
     return env, verify(env, base=base)

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dynamicfeed-verify"
-version = "1.0.0"
+version = "1.0.1"
 description = "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses. Offline, zero trust in the issuer."
 readme = "README.md"
 requires-python = ">=3.8"

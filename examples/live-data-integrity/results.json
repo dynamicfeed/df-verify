@@ -1,0 +1,69 @@
+{
+  "report": "live-data-integrity/v1",
+  "generated_at": "2026-07-01T09:27:44+00:00",
+  "verified": 6,
+  "total": 6,
+  "rows": [
+    {
+      "domain": "Weather (Sydney)",
+      "df_tool": "current_weather",
+      "public_source": "Open-Meteo",
+      "verifiable": true,
+      "provenance": "Open-Meteo",
+      "reliability": "MEDIUM",
+      "freshness_min": 12.7,
+      "measured_at": "2026-07-01T09:15:00+00:00"
+    },
+    {
+      "domain": "Earthquakes",
+      "df_tool": "earthquakes",
+      "public_source": "USGS",
+      "verifiable": true,
+      "provenance": "USGS Earthquake Hazards Program",
+      "reliability": "MEDIUM",
+      "freshness_min": 0.0,
+      "measured_at": "2026-07-01T09:27:41+00:00"
+    },
+    {
+      "domain": "Tides (Boston)",
+      "df_tool": "tides",
+      "public_source": "NOAA CO-OPS",
+      "verifiable": true,
+      "provenance": "NOAA CO-OPS (Tides & Currents)",
+      "reliability": "MEDIUM",
+      "freshness_min": 0.0,
+      "measured_at": "2026-07-01T09:27:42.488594+00:00"
+    },
+    {
+      "domain": "GitHub releases",
+      "df_tool": "github_releases",
+      "public_source": "GitHub API",
+      "verifiable": true,
+      "provenance": "GitHub Releases (atom feed)",
+      "reliability": "MEDIUM",
+      "freshness_min": 5.9,
+      "measured_at": "2026-07-01T09:21:50+00:00"
+    },
+    {
+      "domain": "US Treasury yields",
+      "df_tool": "treasury_yields",
+      "public_source": "US Treasury",
+      "verifiable": true,
+      "provenance": "U.S. Department of the Treasury",
+      "reliability": "MEDIUM",
+      "freshness_min": 2007.7,
+      "measured_at": "2026-06-30T00:00:00+00:00"
+    },
+    {
+      "domain": "Space weather",
+      "df_tool": "space_weather",
+      "public_source": "NOAA SWPC",
+      "verifiable": true,
+      "provenance": "NOAA Space Weather Prediction Center (SWPC)",
+      "reliability": "MEDIUM",
+      "freshness_min": 207.7,
+      "measured_at": "2026-07-01T06:00:00+00:00"
+    }
+  ],
+  "headline": "6/6 live datapoints fetched from Dynamic Feed verified against its published Ed25519 key with the open-source verifier \u2014 each carrying its source and observation time. The same data fetched raw from the underlying public source carries no signature and no provenance: you cannot prove what it said, or when."
+}
