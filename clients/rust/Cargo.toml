@@ -1,6 +1,6 @@
 [package]
 name = "dynamicfeed-verify"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses. No account, no runtime trust in the issuer."
 license = "MIT"

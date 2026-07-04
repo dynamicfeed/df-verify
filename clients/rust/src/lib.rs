@@ -23,7 +23,7 @@ pub fn canonical(env: &Value) -> Vec<u8> {
             out.push(b'{');
             let sorted: BTreeMap<&String, &Value> = map
                 .iter()
-                .filter(|(k, _)| k.as_str() != "signature")
+                .filter(|(k, _)| k.as_str() != "signature" && k.as_str() != "anchor")
                 .collect();
             for (i, (k, v)) in sorted.iter().enumerate() {
                 if i > 0 {

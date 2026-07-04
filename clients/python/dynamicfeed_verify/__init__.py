@@ -55,7 +55,9 @@ def verify(envelope: dict, jwks: dict | None = None, base: str = DEFAULT_BASE) -
     kid, sig_b64 = sig.get("key_id"), sig.get("sig")
     if not kid or not sig_b64:
         return {"ok": False, "error": "no signature block (need signature.key_id + signature.sig)"}
-    payload = {k: v for k, v in envelope.items() if k != "signature"}
+    payload = {k: v for k, v in envelope.items() if k not in ("signature", "anchor")}
+    # `anchor` is added AFTER signing (so any holder can independently RFC 3161 timestamp
+    # the canonical body); it is never part of the signed bytes and MUST be ignored here.
     keys = jwks if jwks is not None else fetch_keys(base)
     if kid not in keys:
         return {"ok": False, "key_id": kid, "error": f"key_id {kid} not in JWKS (rotated or ephemeral)"}

@@ -1,0 +1,17 @@
+{
+ "standard": "DF-VERIFY/1",
+ "schema": "answer/v1",
+ "description": "An answer/v1 receipt whose `anchor` block is added AFTER signing. A conformant verifier MUST strip BOTH `signature` and `anchor` before recomputing the canonical bytes: `authentic` must verify, `anchor_modified` must ALSO verify (the anchor is not signed; its integrity is checked separately via digest_sha256), and `tampered` (one signed field changed) must be rejected. Verify the RAW text, do not re-serialize.",
+ "public_keys": {
+  "df-ed25519-10ba682c8ad1": "0EqyMnQrtKs6E2i9RhXk5tAiSrcaAWuvhSCjMsl3hzc="
+ },
+ "authentic": {
+  "envelope_text": "{\"anchor\":{\"digest_sha256\":\"6a20b09b0d851d5311d45c84df19d486f457f168579afc65005aed4716c0e4f9\",\"note\":\"added AFTER signing; a verifier MUST strip `anchor` (and `signature`) before checking the Ed25519 signature\",\"status\":\"self_anchor\"},\"checks\":[{\"explain\":\"lt: observed 1.0 vs expected 2.0\",\"id\":\"demo\",\"verdict\":\"supported\"}],\"confidence\":0.92,\"generated_at\":\"2026-07-04T00:00:00Z\",\"issuer\":\"dynamicfeed.ai\",\"receipt_id\":\"ans_testvector0001\",\"schema\":\"answer/v1\",\"signature\":{\"alg\":\"Ed25519\",\"canonicalization\":\"json-sorted-compact\",\"key_id\":\"df-ed25519-10ba682c8ad1\",\"sig\":\"ysdKRUZsvhSlHIdjJz6n8EhDbWBrNiGfKBj2oISIQMeqVC_3qWS6I4tJ8GEcbEFjS0-eGUKGzqhkzti9AfHSBw==\"},\"verdict\":\"supported\"}"
+ },
+ "anchor_modified": {
+  "envelope_text": "{\"anchor\":{\"digest_sha256\":\"6a20b09b0d851d5311d45c84df19d486f457f168579afc65005aed4716c0e4f9\",\"note\":\"added AFTER signing; a verifier MUST strip `anchor` (and `signature`) before checking the Ed25519 signature\",\"status\":\"modified_by_a_third_party\"},\"checks\":[{\"explain\":\"lt: observed 1.0 vs expected 2.0\",\"id\":\"demo\",\"verdict\":\"supported\"}],\"confidence\":0.92,\"generated_at\":\"2026-07-04T00:00:00Z\",\"issuer\":\"dynamicfeed.ai\",\"receipt_id\":\"ans_testvector0001\",\"schema\":\"answer/v1\",\"signature\":{\"alg\":\"Ed25519\",\"canonicalization\":\"json-sorted-compact\",\"key_id\":\"df-ed25519-10ba682c8ad1\",\"sig\":\"ysdKRUZsvhSlHIdjJz6n8EhDbWBrNiGfKBj2oISIQMeqVC_3qWS6I4tJ8GEcbEFjS0-eGUKGzqhkzti9AfHSBw==\"},\"verdict\":\"supported\"}"
+ },
+ "tampered": {
+  "envelope_text": "{\"anchor\":{\"digest_sha256\":\"6a20b09b0d851d5311d45c84df19d486f457f168579afc65005aed4716c0e4f9\",\"note\":\"added AFTER signing; a verifier MUST strip `anchor` (and `signature`) before checking the Ed25519 signature\",\"status\":\"self_anchor\"},\"checks\":[{\"explain\":\"lt: observed 1.0 vs expected 2.0\",\"id\":\"demo\",\"verdict\":\"supported\"}],\"confidence\":0.92,\"generated_at\":\"2026-07-04T00:00:00Z\",\"issuer\":\"dynamicfeed.ai\",\"receipt_id\":\"ans_testvector0001\",\"schema\":\"answer/v1\",\"signature\":{\"alg\":\"Ed25519\",\"canonicalization\":\"json-sorted-compact\",\"key_id\":\"df-ed25519-10ba682c8ad1\",\"sig\":\"ysdKRUZsvhSlHIdjJz6n8EhDbWBrNiGfKBj2oISIQMeqVC_3qWS6I4tJ8GEcbEFjS0-eGUKGzqhkzti9AfHSBw==\"},\"verdict\":\"contradicted\"}"
+ }
+}

@@ -30,6 +30,15 @@ fails += (!a.ok) + (t.ok === true);
 console.log(`  [${a.ok ? 'PASS' : 'FAIL'}] signature · authentic envelope verifies`);
 console.log(`  [${!t.ok ? 'PASS' : 'FAIL'}] signature · tampered envelope rejected`);
 
-const n = cv.vectors.length + 2;
+const av = JSON.parse(fs.readFileSync(path.join(VEC, 'signed-answer-anchored.json'), 'utf8'));
+const aa = await verify(av.authentic.envelope_text, { jwks: av.public_keys });
+const am = await verify(av.anchor_modified.envelope_text, { jwks: av.public_keys });
+const at = await verify(av.tampered.envelope_text, { jwks: av.public_keys });
+fails += (!aa.ok) + (!am.ok) + (at.ok === true);
+console.log(`  [${aa.ok ? 'PASS' : 'FAIL'}] anchored answer · authentic verifies (anchor stripped)`);
+console.log(`  [${am.ok ? 'PASS' : 'FAIL'}] anchored answer · anchor-modified STILL verifies (anchor is unsigned)`);
+console.log(`  [${!at.ok ? 'PASS' : 'FAIL'}] anchored answer · tampered signed field rejected`);
+
+const n = cv.vectors.length + 5;
 console.log(`\n${fails ? '✗ ' + fails + ' FAILED' : '✓ ALL ' + n + ' VECTORS PASS'}`);
 process.exit(fails ? 1 : 0);

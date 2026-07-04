@@ -70,7 +70,8 @@ async function fetchJwks(base) { const r = await fetch(base + '/.well-known/keys
 export function canonical(input) {
   const text = typeof input === 'string' ? input : JSON.stringify(input);
   const root = lparse(text.trim());
-  const stripped = root.t === 'o' ? { t: 'o', v: root.v.filter(p => p[0] !== 'signature') } : root;
+  // `anchor` is added AFTER signing (holder-side RFC 3161 timestamping); never signed, always stripped.
+  const stripped = root.t === 'o' ? { t: 'o', v: root.v.filter(p => p[0] !== 'signature' && p[0] !== 'anchor') } : root;
   return canon(stripped);
 }
 
@@ -94,7 +95,7 @@ export async function verify(input, opts = {}) {
   let ks = opts.jwks;
   if (!ks) { try { ks = await fetchJwks(base); } catch (e) { return { ok: false, error: 'could not fetch the public key set' }; } }
   if (!(keyId in ks)) return { ok: false, error: 'key_id ' + keyId + ' not in published JWKS (rotated?)', keyId };
-  const stripped = { t: 'o', v: root.v.filter(p => p[0] !== 'signature') };
+  const stripped = { t: 'o', v: root.v.filter(p => p[0] !== 'signature' && p[0] !== 'anchor') };
   const msg = new TextEncoder().encode(canon(stripped));
   let ok = false;
   try { ok = await ed.verifyAsync(b64u(sigB64), msg, b64u(ks[keyId])); }

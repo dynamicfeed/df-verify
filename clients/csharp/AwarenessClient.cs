@@ -69,7 +69,8 @@ namespace DynamicFeed
 // "json-sorted-compact", "sig":"<base64url>" }.
 // To verify:
 //   1. GET https://dynamicfeed.ai/.well-known/keys  →  { "<key_id>": "<base64url 32-byte raw public key>" }.
-//   2. Re-serialize the response WITHOUT its "signature" field as canonical JSON
+//   2. Re-serialize the response WITHOUT its "signature" and "anchor" fields as canonical JSON
+//      (`anchor` is added after signing so any holder can independently RFC 3161 timestamp the body)
 //      (UTF-8, keys sorted, separators "," and ":").
 //   3. Verify with BouncyCastle:
 //        var verifier = new Org.BouncyCastle.Crypto.Signers.Ed25519Signer();

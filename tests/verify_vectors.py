@@ -25,7 +25,7 @@ VEC = pathlib.Path(__file__).parent / "vectors"
 
 
 def canonical(payload):
-    p = {k: v for k, v in payload.items() if k != "signature"} if isinstance(payload, dict) else payload
+    p = {k: v for k, v in payload.items() if k not in ("signature", "anchor")} if isinstance(payload, dict) else payload
     return json.dumps(p, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
@@ -63,7 +63,17 @@ def main():
     print(f"  [{'PASS' if a else 'FAIL'}] signature · authentic envelope verifies")
     print(f"  [{'PASS' if not t else 'FAIL'}] signature · tampered envelope rejected")
 
-    n = len(cv["vectors"]) + 2
+    av = json.loads((VEC / "signed-answer-anchored.json").read_text())
+    akeys = av["public_keys"]
+    aa = verify(json.loads(av["authentic"]["envelope_text"]), akeys)
+    am = verify(json.loads(av["anchor_modified"]["envelope_text"]), akeys)
+    at = verify(json.loads(av["tampered"]["envelope_text"]), akeys)
+    fails += (not aa) + (not am) + (at is True)
+    print(f"  [{'PASS' if aa else 'FAIL'}] anchored answer · authentic verifies (anchor stripped)")
+    print(f"  [{'PASS' if am else 'FAIL'}] anchored answer · anchor-modified STILL verifies (anchor is unsigned)")
+    print(f"  [{'PASS' if not at else 'FAIL'}] anchored answer · tampered signed field rejected")
+
+    n = len(cv["vectors"]) + 5
     print(f"\n{'✓ ALL ' + str(n) + ' VECTORS PASS' if not fails else '✗ ' + str(fails) + ' FAILED'}")
     return 1 if fails else 0
 
