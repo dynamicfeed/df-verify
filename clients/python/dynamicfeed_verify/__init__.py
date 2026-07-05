@@ -21,8 +21,15 @@ import urllib.request
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 DEFAULT_BASE = "https://dynamicfeed.ai"
+
+# Pinned Dynamic Feed public keys (offline fallback; Principle 1, the courtroom test): receipts
+# stay verifiable even if dynamicfeed.ai is unreachable or ceases to exist. Only ever appended
+# to. The live set at <base>/.well-known/keys takes precedence when reachable.
+KNOWN_KEYS = {
+    "df-ed25519-4cb32e72f333": "O4Kw2r-BjuDRL_Uyj3Vs8i-SnqHZUtPfARfj27NKEfk=",
+}
 # Send an explicit, honest User-Agent: some WAFs (e.g. Cloudflare) 403 the default "Python-urllib".
 _UA = f"dynamicfeed-verify/{__version__} (+https://dynamicfeed.ai)"
 
@@ -39,10 +46,18 @@ def canonical(payload: dict) -> bytes:
 
 
 def fetch_keys(base: str = DEFAULT_BASE, timeout: float = 20) -> dict:
-    """Fetch the JWKS-style public-key map: ``{key_id: base64url(Ed25519 public key)}``."""
-    req = urllib.request.Request(base.rstrip("/") + "/.well-known/keys", headers={"User-Agent": _UA})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)
+    """Fetch the JWKS-style public-key map: ``{key_id: base64url(Ed25519 public key)}``.
+    Falls back to the pinned ``KNOWN_KEYS`` if the live set is unreachable, so verification
+    works offline and outlives the domain."""
+    try:
+        req = urllib.request.Request(base.rstrip("/") + "/.well-known/keys", headers={"User-Agent": _UA})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            live = json.load(r)
+        merged = dict(KNOWN_KEYS)
+        merged.update({k: v for k, v in live.items() if isinstance(v, str)})
+        return merged
+    except Exception:
+        return dict(KNOWN_KEYS)
 
 
 def verify(envelope: dict, jwks: dict | None = None, base: str = DEFAULT_BASE) -> dict:

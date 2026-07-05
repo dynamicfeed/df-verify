@@ -1,0 +1,7 @@
+{
+  "note": "Dynamic Feed Ed25519 signing keys, pinned OUTSIDE dynamicfeed.ai so receipts remain verifiable even if the domain ceases to exist (Principle 1, the courtroom test). key_id = 'df-ed25519-' + sha256(raw_public_key)[:12]. Keys are only ever ADDED here, never removed. Live set: https://dynamicfeed.ai/.well-known/keys",
+  "keys": {
+    "df-ed25519-4cb32e72f333": "O4Kw2r-BjuDRL_Uyj3Vs8i-SnqHZUtPfARfj27NKEfk="
+  },
+  "first_published": "2026-07-05"
+}

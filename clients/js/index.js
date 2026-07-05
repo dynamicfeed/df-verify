@@ -59,7 +59,20 @@ function canon(n) { if (n.t === 'o') { const keys = n.v.map(p => p[0]).sort(); c
 
 function field(node, key) { if (!node || node.t !== 'o') return null; for (const [k, v] of node.v) if (k === key) return v; return null; }
 
-async function fetchJwks(base) { const r = await fetch(base + '/.well-known/keys'); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); }
+// Pinned keys (offline fallback): receipts stay verifiable even if the domain is unreachable.
+const KNOWN_KEYS = { 'df-ed25519-4cb32e72f333': 'O4Kw2r-BjuDRL_Uyj3Vs8i-SnqHZUtPfARfj27NKEfk=' };
+async function fetchJwks(base) {
+  try {
+    const r = await fetch(base + '/.well-known/keys');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const live = await r.json();
+    const merged = { ...KNOWN_KEYS };
+    for (const [k, v] of Object.entries(live)) if (typeof v === 'string') merged[k] = v;
+    return merged;
+  } catch (e) {
+    return { ...KNOWN_KEYS };
+  }
+}
 
 /**
  * The exact bytes that were signed: the response minus its `signature` field, json-sorted-compact.
