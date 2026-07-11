@@ -2,7 +2,8 @@
 
 ## Advisory DFF-2026-07-11-01 — signer lifecycle bypass
 
-Status: source fixes prepared; package publication and service rollout are separate release gates.
+Status: production service cutover completed 2026-07-11; hardened source merged; package
+publication remains a separate, incomplete release gate.
 
 Earlier Python, JavaScript, and Rust verifiers could treat successful Ed25519 mathematics against a
 flat key map as an overall accepted result. Flat key bytes contain no lifecycle status. After a key
@@ -59,21 +60,24 @@ The C# sample is not a reference verifier. It lacks conformance-tested canonical
 and anti-rollback logic. Its network response is explicitly unverified; compatibility methods that
 could return an actionable verdict throw `NotSupportedException`.
 
-### Package and deployment completion criteria
+### Service cutover and package-release criteria
 
-Do not call the rotation clean until all of the following are recorded:
+The production service cutover is complete: `/.well-known/keys` exposes only the active key, while
+the lifecycle registry retains the former public key with `compromised` status. Live endpoints,
+logs, and rollback were verified as part of that deployment. Those service facts do not publish or
+attest to any package-registry artifact.
+
+Do not call the verifier **package** rotation complete until all of the following are recorded:
 
 1. the reviewed source commit and passing CI;
 2. package builds from that exact commit;
 3. registry publication through normal release controls;
 4. clean-environment installation and compromised-key rejection tests for every package;
 5. artifact hashes and source provenance;
-6. service deployment where `/.well-known/keys` exposes only the active key and the lifecycle
-   registry retains historical keys with status;
-7. live endpoint, logs, and rollback verification;
-8. advisory update naming the released versions and completion time.
+6. advisory update naming the released versions and completion time.
 
-This repository does not publish packages or deploy the service merely by merging a source PR.
+Merging source in this repository does not publish packages. The target versions above remain
+unreleased until their registry publications and clean-install checks are recorded.
 
 ## Reporting a vulnerability
 

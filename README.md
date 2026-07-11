@@ -39,9 +39,10 @@ See [SECURITY.md](SECURITY.md) for the full advisory.
   lifecycle status and `registry_revision`.
 - [`KNOWN_KEYS.json`](KNOWN_KEYS.json) is a deprecated compatibility archive. It is intentionally
   not a flat map and cannot honestly authorize the compromised key.
-- The service compatibility endpoint `/.well-known/keys` is required to become active-key-only as
-  part of the corresponding service deployment. Historical key bytes belong in the lifecycle
-  registry. Verify the live endpoint after deployment; this source PR does not deploy it.
+- The production service compatibility endpoint `/.well-known/keys` is active-key-only following
+  the 2026-07-11 service cutover. The former key is absent from active discovery and is retained
+  only in the lifecycle registry with `compromised` status. This repository records verifier
+  source; that completed service cutover does not mean the target package versions are published.
 
 The current-domain registry is an operational disclosure, not an independent trust root. A
 security-sensitive verifier should pin a reviewed registry out of band, authenticate updates, and
