@@ -118,7 +118,7 @@ let registry = dynamicfeed_verify::LifecycleRegistry::parse_with_options(
 
 ```toml
 [dependencies]
-dynamicfeed-verify = { version = "1.0.2", features = ["fetch"] } # target release; not published by this PR
+dynamicfeed-verify = { version = "1.0.2", features = ["fetch"] }
 ```
 
 ## CLI
