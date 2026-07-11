@@ -69,6 +69,12 @@ for name, source in (("Python verifier", python_source), ("verified-agent", agen
             f"{name} lost canonical base64url encoding validation")
     require("expected_length=32" in source and "expected_length=64" in source,
             f"{name} lost exact Ed25519 public-key/signature length checks")
+require("canonicalUnpadded" in javascript_source,
+        "JavaScript lost canonical base64url encoding validation")
+require("b64u(keys[id], 32)" in javascript_source and "b64u(ks[keyId], 32)" in javascript_source,
+        "JavaScript lost exact Ed25519 public-key length checks")
+require("b64u(sigB64, 64)" in javascript_source,
+        "JavaScript lost exact Ed25519 signature length checks")
 require("redirect: 'error'" in javascript_source, "JavaScript network verification follows redirects")
 require(".redirects(0)" in rust_source, "Rust network verification follows redirects")
 require("not explicitly authenticated" in python_source and "not explicitly authenticated" in javascript_source,

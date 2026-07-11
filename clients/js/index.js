@@ -12,16 +12,26 @@ import * as ed from '@noble/ed25519';
 export const DEFAULT_BASE = 'https://dynamicfeed.ai';
 export const COMPILED_MIN_REGISTRY_REVISION = 1;
 
-function b64u(s) {
-  const padding = typeof s === 'string' ? ((s.match(/=+$/) || [''])[0].length) : 0;
-  const coreLength = typeof s === 'string' ? s.length - padding : 0;
-  if (typeof s !== 'string' || !/^[A-Za-z0-9_-]+={0,2}$/.test(s) || coreLength % 4 === 1
-      || (padding && s.length % 4 !== 0))
-    throw new Error('invalid base64url');
-  s = s.replace(/-/g, '+').replace(/_/g, '/');
-  s += '='.repeat((4 - (s.length % 4)) % 4);
-  const bin = atob(s), u = new Uint8Array(bin.length);
+function b64u(s, expectedLength) {
+  if (typeof s !== 'string' || !/^[A-Za-z0-9_-]+={0,2}$/.test(s))
+    throw new Error('invalid base64url alphabet');
+  const unpadded = s.replace(/=+$/, '');
+  const suppliedPadding = s.length - unpadded.length;
+  if (unpadded.length % 4 === 1) throw new Error('invalid base64url length');
+  const requiredPadding = (4 - (unpadded.length % 4)) % 4;
+  if (suppliedPadding !== 0 && suppliedPadding !== requiredPadding)
+    throw new Error('invalid base64url padding');
+  const normalized = unpadded.replace(/-/g, '+').replace(/_/g, '/')
+    + '='.repeat(requiredPadding);
+  const bin = atob(normalized), u = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  let decodedText = '';
+  for (const byte of u) decodedText += String.fromCharCode(byte);
+  const canonicalUnpadded = btoa(decodedText).replace(/\+/g, '-').replace(/\//g, '_')
+    .replace(/=+$/, '');
+  if (unpadded !== canonicalUnpadded) throw new Error('non-canonical base64url encoding');
+  if (expectedLength !== undefined && u.length !== expectedLength)
+    throw new Error('base64url value must decode to exactly ' + expectedLength + ' bytes');
   return u;
 }
 
@@ -106,7 +116,7 @@ export async function validateLifecycleRegistry(raw, opts = {}) { if (!raw || ty
   revisionContext(raw, opts); utcMillis(raw.updated_at, 'updated_at'); const keys = raw.public_keys, life = raw.lifecycle, activeId = raw.active_key_id;
   if (!keys || !life || typeof keys !== 'object' || typeof life !== 'object' || Array.isArray(keys) || Array.isArray(life)) throw new Error('invalid lifecycle registry maps');
   const ids = Object.keys(keys).sort(), lids = Object.keys(life).sort(); if (!ids.length || ids.length !== lids.length || ids.some((x, i) => x !== lids[i])) throw new Error('incomplete lifecycle registry');
-  let active = 0; for (const id of ids) { const pub = b64u(keys[id]); if (pub.length !== 32 || await keyIdFor(pub) !== id) throw new Error('key id binding mismatch');
+  let active = 0; for (const id of ids) { const pub = b64u(keys[id], 32); if (await keyIdFor(pub) !== id) throw new Error('key id binding mismatch');
     const meta = life[id]; if (!meta || meta.alg !== 'Ed25519' || meta.use !== 'receipt-signing' || !['active', 'retired', 'compromised'].includes(meta.status)) throw new Error('invalid lifecycle entry');
     const fingerprint = [...new Uint8Array(await crypto.subtle.digest('SHA-256', pub))].map(b => b.toString(16).padStart(2, '0')).join('');
     if (meta.fingerprint_sha256 !== fingerprint || meta.public_key_retained !== true) throw new Error('lifecycle fingerprint/retention mismatch');
@@ -197,7 +207,7 @@ export async function verify(input, opts = {}) {
   const drops = [['signature']];
   if (root.v.some(p => p[0] === 'anchor')) drops.push(['signature', 'anchor']);
   let sigBytes, pk;
-  try { sigBytes = b64u(sigB64); pk = b64u(ks[keyId]); }
+  try { sigBytes = b64u(sigB64, 64); pk = b64u(ks[keyId], 32); }
   catch (e) { return { ok: false, cryptoValid: false, signerAccepted: false,
     lifecycleStatus: 'unknown', error: 'invalid signature or public-key encoding — ' + e.message, keyId }; }
   if (sigBytes.length !== 64) return { ok: false, cryptoValid: false, signerAccepted: false,
