@@ -1,57 +1,54 @@
-# verified-agent: an AI agent that verifies before it acts
+# verified-agent — verify advisory evidence before policy review
 
-A ~90-line, runnable example of the **DF-VERIFY/1** pattern: *an autonomous agent must not act on world-state it cannot cryptographically verify.*
+This runnable example fetches a live `awareness/v1` advisory and checks four separate properties:
 
-The agent asks [Dynamic Feed](https://dynamicfeed.ai) for a signed go / caution / no-go verdict about a location, verifies the **Ed25519 signature** against the issuer's published key, and only proceeds if the data is **authentic, unaltered, and permits the action**. Tamper with the verdict after it was signed and the agent refuses to act.
+1. the signature declares exactly `Ed25519` and `json-sorted-compact`;
+2. the public key derives the declared `signature.key_id`;
+3. the Ed25519 signature matches the canonical record bytes; and
+4. the signer is accepted by a validated `df-signing-key-registry/v1` lifecycle policy.
 
-## Run it (< 5 min)
+It deliberately does **not** actuate. A valid signature proves integrity under a selected key, not objective truth, safety, authorization, or that a machine used the record. A passing check only makes the advisory eligible for caller-owned policy, independent safety checks, and authorization.
+
+## Run it
 
 ```bash
 pip install cryptography
-python agent.py            # fetch a live signed verdict, verify it, then act
-python agent.py --tamper   # alter the verdict after signing → verification fails → agent refuses
+python agent.py
+python agent.py --tamper
 ```
 
-Expected:
+Expected shape:
 
-```
-$ python agent.py
-✅  VERIFIED (signed by df-ed25519-4cb32e72f333) · verdict='caution', proceeding with the action.
+```text
+ACCEPTED AS ADVISORY EVIDENCE (key df-ed25519-<derived-id>, lifecycle active) · verdict='caution'
+NO ACTION EXECUTED — caller-owned policy, independent safety checks, and authorization remain required.
 
-$ python agent.py --tamper
-⚠   tamper mode: flipped the verdict to 'go' after it was signed
-⛔  REFUSING TO ACT. Unverifiable world-state: signature invalid: ...
-    An agent must never act on data it cannot prove is authentic and unaltered.
+tamper mode: rewrote the verdict after signing
+REJECTED — advisory record not accepted: signature invalid
 ```
 
-## Why this matters
+## What the verifier does
 
-When an AI *acts* (it moves a robot, places a trade, files a claim, dispatches a crew), the data it acted on becomes a liability question: *can you prove what the agent was told, and that no one altered it?* DF-VERIFY answers that with a portable signature anyone can check, with no account and no trust in the vendor. You can verify even against us.
+The example strictly parses downloaded JSON, rejecting duplicate keys, invalid constants, malformed input, and oversized responses. It then:
 
-The whole verifier is the ~12 lines under `# DF-VERIFY/1` in `agent.py`. Three steps:
+1. removes the top-level `signature` block;
+2. canonicalizes the remaining record with recursively sorted keys, compact separators, ASCII escaping, and UTF-8;
+3. validates the lifecycle registry and its public-key fingerprints;
+4. derives `key_id` from the selected public key;
+5. verifies the detached Ed25519 signature; and
+6. rejects compromised keys. A fresh real-time advisory must use the registry's active key.
 
-1. Drop the `signature` block; keep the rest as the payload.
-2. Canonicalize: JSON, keys sorted recursively, compact separators, UTF-8.
-3. Fetch the public key from `/.well-known/keys`, look up `signature.key_id`, verify the Ed25519 signature over the canonical bytes. One changed byte → it fails.
+Two historical anchor conventions exist. If a legacy receipt appended `anchor` after signing, the signature can still validate but the result reports `anchor_authenticated: false`. That anchor must not be treated as covered by the envelope signature.
 
-## In production
+The default registry is fetched from [`/.well-known/signing-key-registry.json`](https://dynamicfeed.ai/.well-known/signing-key-registry.json). Because it comes from the same current HTTPS domain as the record, it is operational disclosure—not an independent trust root. High-assurance consumers should pin the registry or its expected key identities through an out-of-band channel and explicitly record whether that source was authenticated. Merely passing a caller-supplied object does not make it independent. The flat [`/.well-known/keys`](https://dynamicfeed.ai/.well-known/keys) map contains cryptographic bytes only and cannot produce an overall accepted lifecycle result.
 
-This file inlines the verifier so it runs with zero install beyond `cryptography`. For real use, install the packaged reference verifier:
+Live mode requires the active key and `registry_revision >= 1`. A caller may raise that floor or retain the highest authenticated revision durably; rollback protection is reported only when both authenticated source state and a retained revision are supplied. `historical_snapshot` mode is explicit and non-actionable, and cannot make the live `ok` result pass.
 
-```bash
-pip install dynamicfeed-verify
-```
+For production, use a lifecycle-aware verifier release that exposes separate cryptographic, key-binding, lifecycle, and anchor-scope results. Do not assume an older package release is lifecycle-aware merely because it accepts the signature mathematics.
 
-```python
-from dynamicfeed_verify import verify_live
-env, result = verify_live()
-if not result["ok"]:
-    raise RuntimeError(f"unverified world-state: {result['error']}")
-```
-
-- **Spec:** https://dynamicfeed.ai/standard
-- **Verify in the browser:** https://dynamicfeed.ai/proof
-- **Public keys (a key_id to Ed25519 public-key map):** https://dynamicfeed.ai/.well-known/keys
+- **Profile:** https://dynamicfeed.ai/standard
+- **Browser verifier:** https://dynamicfeed.ai/verify.js
+- **Lifecycle registry:** https://dynamicfeed.ai/.well-known/signing-key-registry.json
 
 ## License
 

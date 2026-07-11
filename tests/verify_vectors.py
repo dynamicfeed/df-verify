@@ -14,33 +14,29 @@ Validates two things every conformant verifier must get right:
 Exit code 0 = all vectors pass. The vectors themselves (tests/vectors/*.json) are language-agnostic;
 port this harness to confirm a JS/Go/Rust/etc. verifier byte-for-byte.
 """
-import base64
 import json
 import pathlib
 import sys
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
 VEC = pathlib.Path(__file__).parent / "vectors"
+ROOT = VEC.parents[1]
+sys.path.insert(0, str(ROOT / "clients" / "python"))
+
+from dynamicfeed_verify import canonical as client_canonical  # noqa: E402
+from dynamicfeed_verify import verify as client_verify  # noqa: E402
+
+REGISTRY = json.loads((ROOT / "SIGNING_KEY_LIFECYCLE.json").read_text())
 
 
 def canonical(payload):
-    p = {k: v for k, v in payload.items() if k not in ("signature", "anchor")} if isinstance(payload, dict) else payload
-    return json.dumps(p, sort_keys=True, separators=(",", ":")).encode("utf-8")
-
-
-def _b64(s):
-    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+    p = {k: v for k, v in payload.items() if k != "signature"} if isinstance(payload, dict) else payload
+    return client_canonical(p)
 
 
 def verify(env, keys):
-    sig = env.get("signature") or {}
-    payload = {k: v for k, v in env.items() if k != "signature"}
-    try:
-        Ed25519PublicKey.from_public_bytes(_b64(keys[sig["key_id"]])).verify(_b64(sig["sig"]), canonical(payload))
-        return True
-    except Exception:
-        return False
+    result = client_verify(env, jwks=keys)
+    assert result["ok"] is False, "flat key bytes must never imply lifecycle acceptance"
+    return result.get("crypto_valid") is True
 
 
 def main():
@@ -63,6 +59,14 @@ def main():
     print(f"  [{'PASS' if a else 'FAIL'}] signature · authentic envelope verifies")
     print(f"  [{'PASS' if not t else 'FAIL'}] signature · tampered envelope rejected")
 
+    lifecycle = client_verify(json.loads(sv["authentic"]["envelope_text"]),
+                              lifecycle_registry=REGISTRY)
+    lifecycle_ok = (lifecycle.get("crypto_valid") is True
+                    and lifecycle.get("ok") is False
+                    and lifecycle.get("lifecycle_status") == "compromised")
+    fails += not lifecycle_ok
+    print(f"  [{'PASS' if lifecycle_ok else 'FAIL'}] lifecycle · compromised historical signer rejected")
+
     av = json.loads((VEC / "signed-answer-anchored.json").read_text())
     akeys = av["public_keys"]
     aa = verify(json.loads(av["authentic"]["envelope_text"]), akeys)
@@ -73,7 +77,7 @@ def main():
     print(f"  [{'PASS' if am else 'FAIL'}] anchored answer · anchor-modified STILL verifies (anchor is unsigned)")
     print(f"  [{'PASS' if not at else 'FAIL'}] anchored answer · tampered signed field rejected")
 
-    n = len(cv["vectors"]) + 5
+    n = len(cv["vectors"]) + 6
     print(f"\n{'✓ ALL ' + str(n) + ' VECTORS PASS' if not fails else '✗ ' + str(fails) + ' FAILED'}")
     return 1 if fails else 0
 

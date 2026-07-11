@@ -8,8 +8,13 @@ function report(res) {
     if (res.verdict) extra += ` · verdict=${res.verdict}`;
     if (res.snapshot) extra += ` · snapshot=${res.snapshot}`;
     if (res.ephemeral) extra += ' · EPHEMERAL key';
-    console.log(`✅ VALID — key=${res.keyId}${extra}`);
+    console.log(`✅ POLICY ACCEPTED — signature valid · lifecycle=${res.lifecycleStatus} · key=${res.keyId}${extra}`);
     process.exit(0);
+  }
+  if (res.cryptoValid) {
+    console.log(`△ CRYPTOGRAPHICALLY VALID, LIFECYCLE REJECTED — key=${res.keyId} · ` +
+      `status=${res.lifecycleStatus || 'unknown'} · ${res.error || 'not accepted'}`);
+    process.exit(1);
   }
   console.log(`✗ INVALID — ${res.error}`);
   process.exit(1);
@@ -19,7 +24,7 @@ const a = process.argv.slice(2);
 if (a[0] === '-h' || a[0] === '--help') {
   console.log('usage:\n' +
     '  dynamicfeed-verify [BASE_URL]          fetch a live signed verdict and verify it\n' +
-    '  dynamicfeed-verify - < response.json   verify a saved signed response\n' +
+    '  dynamicfeed-verify - [BASE_URL] < response.json   verify saved bytes using current-domain lifecycle policy\n' +
     `  default BASE_URL = ${DEFAULT_BASE}   ·   spec: ${DEFAULT_BASE}/standard`);
   process.exit(0);
 }

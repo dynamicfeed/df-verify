@@ -1,7 +1,7 @@
 {
  "standard": "DF-VERIFY/1",
  "schema": "answer/v1",
- "description": "An answer/v1 receipt whose `anchor` block is added AFTER signing. A conformant verifier MUST strip BOTH `signature` and `anchor` before recomputing the canonical bytes: `authentic` must verify, `anchor_modified` must ALSO verify (the anchor is not signed; its integrity is checked separately via digest_sha256), and `tampered` (one signed field changed) must be rejected. Verify the RAW text, do not re-serialize.",
+ "description": "A cryptographic fixture for an answer/v1 receipt whose `anchor` block was added after signing. `authentic` and `anchor_modified` remain mathematically signature-valid with `anchor_authenticated=false`; this does not validate the anchor artifact or signer lifecycle. `tampered` changes a signed field and must be rejected. Verify the raw text.",
  "public_keys": {
   "df-ed25519-10ba682c8ad1": "0EqyMnQrtKs6E2i9RhXk5tAiSrcaAWuvhSCjMsl3hzc="
  },

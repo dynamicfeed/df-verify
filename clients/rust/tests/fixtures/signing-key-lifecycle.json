@@ -1,0 +1,70 @@
+{
+  "schema": "df-signing-key-registry/v1",
+  "issuer": "dynamicfeed.ai",
+  "registry_revision": 1,
+  "updated_at": "2026-07-11T10:17:26Z",
+  "active_key_id": "df-ed25519-6ca0de29113b",
+  "public_keys": {
+    "df-ed25519-4cb32e72f333": "O4Kw2r-BjuDRL_Uyj3Vs8i-SnqHZUtPfARfj27NKEfk=",
+    "df-ed25519-6ca0de29113b": "acMWky59eQfoVqCUgmUM3tcl35YioRngL4wVDIQsstg="
+  },
+  "lifecycle": {
+    "df-ed25519-4cb32e72f333": {
+      "alg": "Ed25519",
+      "use": "receipt-signing",
+      "fingerprint_sha256": "4cb32e72f33309dcfef9e8a887a389463bf8cbe607104c48c1555e8881d0a119",
+      "status": "compromised",
+      "custody_class": "railway-environment-seed",
+      "first_used_at": "2026-06-06T00:00:00Z",
+      "active_from": "2026-06-06T00:00:00Z",
+      "retired_at": "2026-07-11T09:49:41Z",
+      "compromised_after": "2026-07-11T00:00:00Z",
+      "compromise_time_basis": "Conservative start-of-UTC-day boundary for the known exposure incident; the exact exposure instant is not claimed.",
+      "public_key_retained": true
+    },
+    "df-ed25519-6ca0de29113b": {
+      "alg": "Ed25519",
+      "use": "receipt-signing",
+      "fingerprint_sha256": "6ca0de29113bb8dd8806a56c00f19c626320b8f6309e34a6c49921b10f8445cd",
+      "status": "active",
+      "custody_class": "railway-environment-seed",
+      "first_used_at": "2026-07-11T09:49:41Z",
+      "active_from": "2026-07-11T09:49:41Z",
+      "retired_at": null,
+      "compromised_after": null,
+      "public_key_retained": true
+    }
+  },
+  "authority": {
+    "classification": "domain-authenticated-operational-disclosure",
+    "normative": false,
+    "independent_registry_root": false,
+    "note": "The HTTP response is signed by the active data-signing key. That proves the current Dynamic Feed signer made this disclosure; it is not an independent trust root. Live-policy consumers must authenticate updates and retain a monotonic minimum registry_revision outside this document."
+  },
+  "rollback_protection": {
+    "live_policy_minimum_revision": 1,
+    "live_policy_requires_authenticated_update": true,
+    "historical_snapshot_mode_must_be_explicit": true,
+    "self_asserted_revision_is_not_anti_rollback": true
+  },
+  "compatibility": {
+    "legacy_key_set": "/.well-known/keys",
+    "legacy_flat_map_unchanged": false,
+    "legacy_flat_map_scope": "active-key-only-after-2026-07-11-compromise",
+    "historical_key_source": "/.well-known/signing-key-registry.json",
+    "reason": "Lifecycle-unaware clients must fail closed for compromised keys; historical bytes remain available with explicit status."
+  },
+  "verification_policy": {
+    "cryptographic_validity_separate_from_lifecycle": true,
+    "retired_keys_verify_historical_bytes": true,
+    "compromised_key_pre_boundary_evidence_requires_independently_validated_timestamp": true,
+    "receipt_issued_at_alone_is_not_independent_time_evidence": true
+  },
+  "limitations": [
+    "This registry is an operational disclosure, not a standards-body or legal approval.",
+    "A self-signature by the active data key is not an independent lifecycle authority; pin this document or its keys outside this domain before using it as a policy gate.",
+    "The compromised_after boundary is deliberately conservative and has day-level incident precision.",
+    "registry_revision enables caller-enforced anti-rollback but is not self-enforcing; a live verifier must retain its minimum accepted revision through an authenticated channel. Historical snapshot verification is a separate explicit mode.",
+    "Dynamic Feed does not claim that every RFC 3161 or OpenTimestamps proof in the current implementation has received complete independent cryptographic validation."
+  ]
+}

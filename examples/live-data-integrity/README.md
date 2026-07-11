@@ -1,35 +1,33 @@
 # Live-Data Integrity Report
 
 A reproducible measurement anyone can re-run. For a set of live-data domains an AI agent might call, it
-fetches the datapoint from Dynamic Feed, independently verifies its Ed25519 signature with the open-source
-`dynamicfeed-verify` package (no trust in Dynamic Feed beyond the public key), and records three honest,
-hard-to-game facts:
+fetches the datapoint from Dynamic Feed, checks its Ed25519 signature and signer lifecycle against the
+reviewed registry snapshot in this repository, and records separate integrity and evidence fields:
 
-- **verifiable** — does the datapoint cryptographically verify against a published key? (yes/no)
+- **policy accepted** — do signature mathematics and the pinned signer-lifecycle policy both pass?
 - **provenance** — does it name its source and observation time?
 - **freshness** — how old is the newest datapoint, from its own timestamp?
 
-The point is structural, not a dig at any source: the same public data, fetched raw from the underlying
-source an agent would otherwise call, carries no signature and no provenance. You cannot later prove what it
-said, or when. Dynamic Feed returns it signed and provenance-stamped, and this script proves that by verifying
-every datapoint itself.
+The report checks the fields each returned object actually contains. It does not assume an upstream
+source lacks provenance, and signer-policy acceptance does not establish objective truth.
 
 ## Reproduce it
 
 ```bash
-pip install dynamicfeed-verify
+python -m pip install -e ../../clients/python
 python report.py     # prints the table + headline, writes results.json
 ```
 
 Run it any day, against live sources, and reproduce the number yourself. Sample run:
 
 ```
-domain                 verifiable reliability freshness  source
+domain                 accepted   reliability freshness  source
 Weather (Sydney)       YES        MEDIUM      13m        Open-Meteo
 Earthquakes            YES        MEDIUM      0m         USGS Earthquake Hazards Program
 US Treasury yields     YES        MEDIUM      33.5h      U.S. Department of the Treasury
 ...
-6/6 verified against the published Ed25519 key with the open-source verifier.
+6/6 passed signature mathematics and the pinned signer-lifecycle policy.
 ```
 
-Evidence and reproducible measurement, not a certification. Tamper-evident, not tamper-proof.
+The checked-out registry is a reviewed out-of-band input; its current-domain counterpart is not an
+independent trust root. Evidence and reproducible measurement, not truth, safety, or certification.

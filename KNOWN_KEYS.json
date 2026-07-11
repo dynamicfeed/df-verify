@@ -1,7 +1,29 @@
 {
-  "note": "Dynamic Feed Ed25519 signing keys, pinned OUTSIDE dynamicfeed.ai so receipts remain verifiable even if the domain ceases to exist (Principle 1, the courtroom test). key_id = 'df-ed25519-' + sha256(raw_public_key)[:12]. Keys are only ever ADDED here, never removed. Live set: https://dynamicfeed.ai/.well-known/keys",
+  "schema": "df-known-key-archive/v2",
+  "deprecated": true,
+  "superseded_by": "SIGNING_KEY_LIFECYCLE.json",
+  "note": "Compatibility archive of public key bytes only. This file is deliberately not a flat key map and MUST NOT be used to make a signer-acceptance decision. Validate SIGNING_KEY_LIFECYCLE.json and apply lifecycle policy instead.",
   "keys": {
-    "df-ed25519-4cb32e72f333": "O4Kw2r-BjuDRL_Uyj3Vs8i-SnqHZUtPfARfj27NKEfk="
+    "df-ed25519-4cb32e72f333": {
+      "public_key_base64url": "O4Kw2r-BjuDRL_Uyj3Vs8i-SnqHZUtPfARfj27NKEfk=",
+      "status": "compromised",
+      "compromised_after": "2026-07-11T00:00:00Z",
+      "policy_accepted": false
+    },
+    "df-ed25519-6ca0de29113b": {
+      "public_key_base64url": "acMWky59eQfoVqCUgmUM3tcl35YioRngL4wVDIQsstg=",
+      "status": "active",
+      "active_from": "2026-07-11T09:49:41Z",
+      "policy_accepted": false,
+      "reason": "This deprecated compatibility archive is not lifecycle authority; validate SIGNING_KEY_LIFECYCLE.json."
+    }
   },
-  "first_published": "2026-07-05"
+  "policy": {
+    "flat_key_acceptance_forbidden": true,
+    "cryptographic_validity_separate_from_lifecycle": true,
+    "compromised_keys_never_policy_accepted": true,
+    "historical_public_key_bytes_retained": true
+  },
+  "first_published": "2026-07-05",
+  "last_reviewed": "2026-07-11"
 }
