@@ -62,6 +62,13 @@ for name, source in (("Python", python_source), ("JavaScript", javascript_source
     require("historical_snapshot" in source or "HistoricalSnapshot" in source,
             f"{name} lost explicit historical mode")
 require("_NoRedirect" in python_source, "Python network verification follows redirects")
+for name, source in (("Python verifier", python_source), ("verified-agent", agent_source)):
+    require('re.fullmatch(r"[A-Za-z0-9_-]+={0,2}"' in source,
+            f"{name} lost strict base64url alphabet/padding validation")
+    require("canonical_unpadded" in source,
+            f"{name} lost canonical base64url encoding validation")
+    require("expected_length=32" in source and "expected_length=64" in source,
+            f"{name} lost exact Ed25519 public-key/signature length checks")
 require("redirect: 'error'" in javascript_source, "JavaScript network verification follows redirects")
 require(".redirects(0)" in rust_source, "Rust network verification follows redirects")
 require("not explicitly authenticated" in python_source and "not explicitly authenticated" in javascript_source,

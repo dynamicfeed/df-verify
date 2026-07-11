@@ -13,6 +13,7 @@ import argparse
 import base64
 import hashlib
 import json
+import re
 import urllib.request
 from datetime import datetime, timezone
 from typing import Optional
@@ -34,11 +35,26 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 _NO_REDIRECT_OPENER = urllib.request.build_opener(_NoRedirect)
 
 
-def _b64(value: str) -> bytes:
-    if not isinstance(value, str):
-        raise ValueError("base64url value must be text")
-    padded = value + "=" * (-len(value) % 4)
-    return base64.b64decode(padded, altchars=b"-_", validate=True)
+def _b64(value: str, expected_length: Optional[int] = None) -> bytes:
+    """Decode only canonical padded or unpadded base64url of the expected byte length."""
+    if not isinstance(value, str) or re.fullmatch(r"[A-Za-z0-9_-]+={0,2}", value) is None:
+        raise ValueError("invalid base64url alphabet")
+    unpadded = value.rstrip("=")
+    supplied_padding = len(value) - len(unpadded)
+    if len(unpadded) % 4 == 1:
+        raise ValueError("invalid base64url length")
+    required_padding = (-len(unpadded)) % 4
+    if supplied_padding not in (0, required_padding):
+        raise ValueError("invalid base64url padding")
+    decoded = base64.b64decode(
+        unpadded + "=" * required_padding, altchars=b"-_", validate=True,
+    )
+    canonical_unpadded = base64.urlsafe_b64encode(decoded).decode("ascii").rstrip("=")
+    if unpadded != canonical_unpadded:
+        raise ValueError("non-canonical base64url encoding")
+    if expected_length is not None and len(decoded) != expected_length:
+        raise ValueError(f"base64url value must decode to exactly {expected_length} bytes")
+    return decoded
 
 
 def _unique_object(pairs):
@@ -106,7 +122,7 @@ def _validate_registry(registry: dict, minimum_revision: int = COMPILED_MIN_REGI
         raise ValueError("incomplete signing-key registry")
     active = []
     for key_id, encoded in keys.items():
-        public_raw = _b64(encoded)
+        public_raw = _b64(encoded, expected_length=32)
         fingerprint = hashlib.sha256(public_raw).hexdigest()
         if len(public_raw) != 32 or key_id != "df-ed25519-" + fingerprint[:12]:
             raise ValueError(f"public key does not derive {key_id}")
@@ -220,8 +236,8 @@ def verify(env: dict, base: str = BASE, lifecycle_registry: Optional[dict] = Non
                 "independent_trust_root": False,
                 "error": "key absent from lifecycle registry"}
     try:
-        public_raw = _b64(encoded_key)
-        signature_raw = _b64(signature_text)
+        public_raw = _b64(encoded_key, expected_length=32)
+        signature_raw = _b64(signature_text, expected_length=64)
     except Exception as exc:
         return {"ok": False, "crypto_valid": False, "signer_accepted": False,
                 "lifecycle_status": "unknown", "key_id": key_id,

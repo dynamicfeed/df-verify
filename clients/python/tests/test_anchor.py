@@ -122,7 +122,7 @@ def test_strict_json_base64_and_timestamp_inputs_fail_closed():
             pass
         else:
             raise AssertionError(f"non-strict JSON accepted: {raw}")
-    for encoded in ("!!!!", "A", "AA=", "abc$", "===="):
+    for encoded in ("!!!!", "A", "AA=", "AA===", "+A==", "AB", "abc$", "===="):
         try:
             _b64d(encoded)
         except ValueError:
@@ -144,6 +144,32 @@ def test_strict_json_base64_and_timestamp_inputs_fail_closed():
     )
     assert result["ok"] is False and result["crypto_valid"] is False
     assert "encoding" in result["error"]
+
+
+def test_signature_text_malleability_and_wrong_decoded_lengths_fail_closed():
+    env = _load("awareness_noanchor.json")
+    signature_text = env["signature"]["sig"]
+    assert len(_b64d(signature_text, expected_length=64)) == 64
+
+    # Python's permissive urlsafe_b64decode accepts both of these mutations as the same 64 bytes.
+    # The signature block is outside the signed payload, so accepting either spelling would create
+    # a cross-verifier signature-text malleability gap.
+    for mutated_text in ("!" + signature_text, signature_text + "!"):
+        mutated = copy.deepcopy(env)
+        mutated["signature"]["sig"] = mutated_text
+        result = verify(
+            mutated, lifecycle_registry=REGISTRY, registry_source_authenticated=True,
+        )
+        assert result["ok"] is False and result["crypto_valid"] is False
+        assert "encoding" in result["error"]
+
+    for encoded, expected_length in (("AA", 64), ("AA", 32)):
+        try:
+            _b64d(encoded, expected_length=expected_length)
+        except ValueError as exc:
+            assert "exactly" in str(exc)
+        else:
+            raise AssertionError("wrong decoded length accepted")
 
 
 def test_custom_network_origin_does_not_self_authenticate():

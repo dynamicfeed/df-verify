@@ -121,6 +121,27 @@ class VerifiedAgentTests(unittest.TestCase):
             envelope, lifecycle_registry=self.registry, registry_source_authenticated=True,
         )["ok"])
 
+    def test_signature_text_malleability_is_rejected(self):
+        envelope = self.envelope(self.active_private, self.active_id)
+        signature_text = envelope["signature"]["sig"]
+        for mutated_text in ("!!!" + signature_text, signature_text + "!!!"):
+            mutated = json.loads(json.dumps(envelope))
+            mutated["signature"]["sig"] = mutated_text
+            result = agent.verify(
+                mutated,
+                lifecycle_registry=self.registry,
+                registry_source_authenticated=True,
+            )
+            self.assertFalse(result["ok"])
+            self.assertFalse(result["crypto_valid"])
+            self.assertIn("encoding", result["error"])
+
+        for malformed in ("A", "AA=", "AA===", "+A==", "AB", "abc$"):
+            with self.assertRaises(ValueError):
+                agent._b64(malformed)
+        with self.assertRaisesRegex(ValueError, "exactly 32 bytes"):
+            agent._b64("AA", expected_length=32)
+
     def test_registry_revision_is_positive_and_meets_floor(self):
         for revision in (None, 0, True):
             bad = json.loads(json.dumps(self.registry))

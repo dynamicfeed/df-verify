@@ -46,13 +46,32 @@ def _urlopen_no_redirect(request, timeout):
     return _NO_REDIRECT_OPENER.open(request, timeout=timeout)
 
 
-def _b64d(s: str) -> bytes:
-    """Strictly decode padded or unpadded base64url."""
-    padding = len(s) - len(s.rstrip("=")) if isinstance(s, str) else 0
-    if not isinstance(s, str) or not re.fullmatch(r"[A-Za-z0-9_-]+={0,2}", s) \
-            or len(s.rstrip("=")) % 4 == 1 or (padding and len(s) % 4 != 0):
-        raise ValueError("invalid base64url")
-    return base64.b64decode(s + "=" * (-len(s) % 4), altchars=b"-_", validate=True)
+def _b64d(s: str, expected_length: Optional[int] = None) -> bytes:
+    """Strictly decode canonical padded or unpadded base64url.
+
+    ``base64.urlsafe_b64decode`` silently discards non-alphabet bytes. That is unsafe for an
+    unsigned signature container because multiple signature strings can otherwise decode to the
+    same Ed25519 bytes. Enforce the URL-safe alphabet, exact padding, canonical unused bits, and
+    (where supplied) the protocol object's exact decoded length before returning any bytes.
+    """
+    if not isinstance(s, str) or re.fullmatch(r"[A-Za-z0-9_-]+={0,2}", s) is None:
+        raise ValueError("invalid base64url alphabet")
+    unpadded = s.rstrip("=")
+    supplied_padding = len(s) - len(unpadded)
+    if len(unpadded) % 4 == 1:
+        raise ValueError("invalid base64url length")
+    required_padding = (-len(unpadded)) % 4
+    if supplied_padding not in (0, required_padding):
+        raise ValueError("invalid base64url padding")
+    decoded = base64.b64decode(
+        unpadded + "=" * required_padding, altchars=b"-_", validate=True,
+    )
+    canonical_unpadded = base64.urlsafe_b64encode(decoded).decode("ascii").rstrip("=")
+    if unpadded != canonical_unpadded:
+        raise ValueError("non-canonical base64url encoding")
+    if expected_length is not None and len(decoded) != expected_length:
+        raise ValueError(f"base64url value must decode to exactly {expected_length} bytes")
+    return decoded
 
 
 def _unique_object(pairs):
@@ -129,7 +148,7 @@ def validate_lifecycle_registry(raw: dict, *, mode: str = "live",
         raise ValueError("incomplete signing-key registry")
     active = []
     for key_id, encoded in keys.items():
-        public_raw = _b64d(encoded)
+        public_raw = _b64d(encoded, expected_length=32)
         fingerprint = hashlib.sha256(public_raw).hexdigest()
         if len(public_raw) != 32 or key_id != "df-ed25519-" + fingerprint[:12]:
             raise ValueError(f"public key does not derive {key_id}")
@@ -295,8 +314,8 @@ def verify(envelope: dict, jwks: Optional[dict] = None, base: str = DEFAULT_BASE
                 "lifecycle_status": "unknown", "key_id": kid,
                 "error": f"key_id {kid} not in supplied trust material"}
     try:
-        public_raw = _b64d(keys[kid])
-        sig_bytes = _b64d(sig_b64)
+        public_raw = _b64d(keys[kid], expected_length=32)
+        sig_bytes = _b64d(sig_b64, expected_length=64)
     except Exception as exc:
         return {"ok": False, "crypto_valid": False, "signer_accepted": False,
                 "lifecycle_status": "unknown", "key_id": kid,
