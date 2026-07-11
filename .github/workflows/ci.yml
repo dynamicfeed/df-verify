@@ -10,16 +10,34 @@ permissions:
 
 jobs:
   python:
-    name: Python verifier + vectors
+    name: Python ${{ matrix.python }} verifier + lifecycle policy
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.8", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - run: pip install cryptography
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e clients/python pytest build
+      - name: lifecycle and anchor regressions
+        run: python -m pytest clients/python/tests
+      - name: non-actionable verified-agent regressions
+        run: python -m unittest examples/verified-agent/test_agent.py
       - name: conformance vectors
         run: python3 tests/verify_vectors.py
+      - name: package build
+        run: python -m build clients/python
+      - name: clean-wheel lifecycle and encoding regressions
+        run: |
+          clean_venv="$RUNNER_TEMP/dynamicfeed-verify-wheel"
+          python -m venv "$clean_venv"
+          "$clean_venv/bin/pip" install pytest clients/python/dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$clean_venv/bin/python" -m pytest "$GITHUB_WORKSPACE/clients/python/tests"
+      - name: notebook JSON integrity
+        run: python -m json.tool examples/openai/grounding_on_verifiable_live_data.ipynb >/dev/null
       - name: reliability self-test
         run: python3 reliability/verify_reliability.py --selftest
 
@@ -32,8 +50,19 @@ jobs:
         with:
           node-version: "20"
       - run: npm install --prefix clients/js
+      - name: lifecycle and anchor regressions
+        run: npm test --prefix clients/js
       - name: conformance vectors
         run: node tests/verify_vectors.mjs
+      - name: package and test clean tarball
+        run: |
+          package_dir="$RUNNER_TEMP/dynamicfeed-verify-package"
+          consumer_dir="$RUNNER_TEMP/dynamicfeed-verify-consumer"
+          mkdir -p "$package_dir" "$consumer_dir"
+          (cd clients/js && npm pack --pack-destination "$package_dir")
+          npm install --prefix "$consumer_dir" "$package_dir"/*.tgz
+          DF_VERIFY_PACKAGE_ENTRY="$consumer_dir/node_modules/@dynamicfeed/verify/index.js" \
+            node clients/js/tests/anchor.test.js
       - name: reliability self-test
         run: node reliability/verify_reliability.js --selftest
 
@@ -49,5 +78,21 @@ jobs:
         with:
           components: rustfmt, clippy
       - run: cargo fmt --check
-      - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
+      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo test --all-features
+      - name: package and test packaged source
+        run: |
+          cargo package --allow-dirty
+          package_dir="$(mktemp -d)"
+          tar -xzf target/package/dynamicfeed-verify-1.0.2.crate -C "$package_dir"
+          cargo test --all-features --manifest-path "$package_dir/dynamicfeed-verify-1.0.2/Cargo.toml"
+
+  rotation-policy:
+    name: Signing-key rotation policy guardrail
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/check_rotation_policy.py

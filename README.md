@@ -1,79 +1,176 @@
-# DF-VERIFY/1: verifiable grounding for AI that acts
+# DF-VERIFY/1 verifier sources
 
-Reference implementation of **[DF-VERIFY/1](https://dynamicfeed.ai/standard)**, an open, vendor-neutral standard for cryptographically signing, publishing, and **independently verifying exactly what an AI system was told the moment it acted**.
+Reference verifier source for Dynamic Feed signed envelopes and signing-key lifecycle policy.
+The security boundary is deliberately split:
 
-When an AI *acts* (it moves a robot, places a trade, files a claim), "trust me" is not an audit trail. DF-VERIFY attaches an Ed25519 signature to any JSON response, publishes the verifying key openly, and lets anyone check it with **no account and no dependency on the issuer**. You can verify, even against the issuer.
+- `crypto_valid` means the Ed25519 signature, exact metadata, canonical bytes, and key-ID binding
+  passed;
+- `ok` / policy acceptance additionally requires an acceptable signer in a validated lifecycle
+  registry whose source the verifier authenticated;
+- a signature proves integrity under that key, not objective truth, safety, or legal compliance.
 
-[![conformance](https://github.com/dynamicfeed/df-verify/actions/workflows/ci.yml/badge.svg)](https://github.com/dynamicfeed/df-verify/actions/workflows/ci.yml)
-[![DF-VERIFY/1](https://dynamicfeed.ai/badge.svg)](https://dynamicfeed.ai/standard)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+## Security notice — 2026-07-11
 
-Every verifier here (Python, JavaScript, C#, Rust) is held to the **same language-agnostic conformance vectors**, run in CI on every commit. Canonicalization must match byte-for-byte, the authentic signature must verify, and the tampered twin must be rejected.
+Earlier published verifiers accepted a flat public-key map and had no retired/compromised signer
+policy. The former signing key `df-ed25519-4cb32e72f333` is now classified **compromised** using the
+conservative boundary `2026-07-11T00:00:00Z`. Its public bytes are retained so historical signature
+mathematics remain inspectable, but that key must never produce a live policy-accepted result.
 
-## What's here
+The hardened versions in this repository are release targets, not evidence that package registries
+have already been updated:
 
-| Path | What |
+| Ecosystem | Affected published version(s) | Hardened source target | Published by this PR? |
+|---|---:|---:|---|
+| PyPI `dynamicfeed-verify` | `<= 1.0.2` | `1.0.3` | No |
+| npm `@dynamicfeed/verify` | `<= 1.0.1` | `1.0.2` | No |
+| crates.io `dynamicfeed-verify` | `1.0.0` (and affected prior source `1.0.1`) | `1.0.2` | No |
+| C# sample | all current source | quarantined, transport-only | Not a package |
+
+Do not announce a clean package rotation until the target artifacts are built from the reviewed
+commit, published through their normal release controls, installed from each registry into a clean
+environment, and the advisory is updated with artifact digests and provenance.
+
+See [SECURITY.md](SECURITY.md) for the full advisory.
+
+## Trust material
+
+- [`SIGNING_KEY_LIFECYCLE.json`](SIGNING_KEY_LIFECYCLE.json) is the reviewed
+  `df-signing-key-registry/v1` snapshot. It retains active and historical public bytes with explicit
+  lifecycle status and `registry_revision`.
+- [`KNOWN_KEYS.json`](KNOWN_KEYS.json) is a deprecated compatibility archive. It is intentionally
+  not a flat map and cannot honestly authorize the compromised key.
+- The service compatibility endpoint `/.well-known/keys` is required to become active-key-only as
+  part of the corresponding service deployment. Historical key bytes belong in the lifecycle
+  registry. Verify the live endpoint after deployment; this source PR does not deploy it.
+
+The current-domain registry is an operational disclosure, not an independent trust root. A
+security-sensitive verifier should pin a reviewed registry out of band, authenticate updates, and
+persist the highest authenticated `registry_revision` outside the document.
+
+## What policy-aware verification does
+
+1. Strictly parse JSON and reject duplicate object names, malformed numbers, raw controls, and
+   trailing bytes.
+2. Require exactly `Ed25519` and `json-sorted-compact` signature metadata.
+3. Preserve both frozen receipt conventions: verify without `signature` first, then (only when
+   needed) without both `signature` and a legacy post-signature `anchor`.
+4. Derive `key_id` from the SHA-256 fingerprint of the raw public key.
+5. Validate the lifecycle registry, its key/fingerprint relationships, chronology, policy fields,
+   active-key uniqueness, and revision floor.
+6. Accept only the current active key in live mode. Retired keys are non-live historical material;
+   compromised keys are never policy accepted.
+7. Keep historical snapshot inspection explicit and non-actionable: it can report signature
+   mathematics and policy-as-of state but never returns an overall live acceptance.
+
+`anchor_authenticated=true` means an attached anchor was inside the signed bytes.
+`anchor_authenticated=false` means the frozen legacy post-signature attachment was outside them.
+Neither state independently validates an RFC 3161 or OpenTimestamps proof; these libraries do not
+claim full timestamp-proof verification.
+
+## Repository map
+
+| Path | Status |
 |---|---|
-| [`clients/python`](clients/python) | `dynamicfeed-verify`: Python reference verifier (library + CLI) |
-| [`clients/js`](clients/js) | `@dynamicfeed/verify`: JavaScript/TypeScript verifier (Node, Deno, Bun, browser) |
-| [`clients/csharp`](clients/csharp) | C# reference verifier |
-| [`clients/rust`](clients/rust) | `dynamicfeed-verify`: Rust reference verifier (library + CLI), passes the shared vectors |
-| [`examples/verified-agent`](examples/verified-agent) | a runnable agent that verifies a signature **before it acts** |
-| [`tests/vectors`](tests/vectors) | language-agnostic conformance vectors + Python & JS harnesses |
+| [`clients/python`](clients/python) | Python lifecycle-aware verifier, target `1.0.3` |
+| [`clients/js`](clients/js) | JavaScript/TypeScript lifecycle-aware verifier, target `1.0.2` |
+| [`clients/rust`](clients/rust) | Rust crate `dynamicfeed-verify`, lifecycle-aware target `1.0.2` |
+| [`clients/csharp`](clients/csharp) | Quarantined transport-only sample; no reference-verifier claim |
+| [`examples/verified-agent`](examples/verified-agent) | Verify-before-use example; never an actuator |
+| [`tests/vectors`](tests/vectors) | Shared canonicalization and frozen receipt fixtures |
+| [`reliability`](reliability) | Separate non-cryptographic reliability vocabulary and validators |
 
-## Verify in 30 seconds
+### Rust package provenance
 
-Both reference verifiers are published. Install one and check a live signed verdict in two lines.
+This repository's [`clients/rust`](clients/rust) is the source for the crate named
+`dynamicfeed-verify`. The distinct monorepo crate named `df-verify` (`0.1.2` target) is maintained at
+`Dynamic-Feed/packages/df-verify-rs`; it is not source-identical or package-identical. Its Cargo
+`repository` metadata must point to its actual source location (or that exact source must be added
+here under an unambiguous path) before publication.
 
-**Python** (`pip install dynamicfeed-verify`)
+## Verify from source
+
+Python:
+
+```bash
+python -m pip install -e clients/python pytest
+python -m pytest clients/python/tests
+python tests/verify_vectors.py
+```
+
+JavaScript:
+
+```bash
+npm install --prefix clients/js
+npm test --prefix clients/js
+node tests/verify_vectors.mjs
+```
+
+Rust:
+
+```bash
+cd clients/rust
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
+```
+
+Rotation guardrail:
+
+```bash
+python scripts/check_rotation_policy.py
+```
+
+## Minimal policy-aware use
+
+Python:
+
 ```python
-from dynamicfeed_verify import verify_live
-env, result = verify_live()        # fetch a fresh signed verdict and verify it
-assert result["ok"]                # tampered or unsigned: this fails
+import json
+from dynamicfeed_verify import verify
+
+registry = json.load(open("SIGNING_KEY_LIFECYCLE.json"))
+result = verify(
+    envelope,
+    lifecycle_registry=registry,
+    registry_source_authenticated=True,  # caller authenticated this pinned file
+)
+if not result["ok"]:
+    raise RuntimeError(result["error"])
 ```
 
-**JavaScript** (`npm i @dynamicfeed/verify`)
+JavaScript:
+
 ```js
-import { verifyLive } from '@dynamicfeed/verify';
-const { result } = await verifyLive();
-if (!result.ok) throw new Error(`unverified world-state: ${result.error}`);
+import { verify } from '@dynamicfeed/verify';
+
+const result = await verify(rawEnvelopeText, {
+  lifecycleRegistry: pinnedRegistry,
+  registrySourceAuthenticated: true,
+});
+if (!result.ok) throw new Error(result.error);
 ```
 
-**Or run the demo agent from source** (verify-before-act, and watch it refuse when tampered):
-```bash
-git clone https://github.com/dynamicfeed/df-verify && cd df-verify
-pip install cryptography
-python examples/verified-agent/agent.py            # verify a live verdict, then act
-python examples/verified-agent/agent.py --tamper   # altered after signing, the agent refuses to act
+Rust:
+
+```rust
+let registry = dynamicfeed_verify::LifecycleRegistry::parse_with_options(
+    &registry_text,
+    dynamicfeed_verify::RegistryValidationOptions {
+        registry_source_authenticated: true,
+        ..Default::default()
+    },
+)?;
+let result = dynamicfeed_verify::verify_with_registry(&raw_envelope, &registry)?;
+assert!(result.accepted);
 ```
-
-## How it works
-
-1. Drop the `signature` block; keep the rest as the payload.
-2. Canonicalize: JSON, keys sorted recursively, compact separators, non-ASCII escaped `\uXXXX`, UTF-8.
-3. Fetch the public key from `https://dynamicfeed.ai/.well-known/keys`, look up `signature.key_id`.
-4. Verify the Ed25519 signature over the canonical bytes. Change one byte → it fails.
-
-## Conformance
-
-```bash
-python3 tests/verify_vectors.py     # Python harness  → "✓ ALL 10 VECTORS PASS"
-node    tests/verify_vectors.mjs    # JS harness (run: npm install --prefix clients/js  first)
-```
-
-Both reference verifiers reproduce every vector (same canonical bytes, same signature verdicts), so you can confirm a new implementation in any language byte-for-byte.
 
 ## Links
 
-- **Spec:** https://dynamicfeed.ai/standard
-- **Verify in your browser:** https://dynamicfeed.ai/proof
-- **Public keys (a key_id to Ed25519 public-key map):** https://dynamicfeed.ai/.well-known/keys
-- **Discovery manifest:** https://dynamicfeed.ai/.well-known/df-verify.json
+- Specification surface: https://dynamicfeed.ai/standard
+- Browser verifier: https://dynamicfeed.ai/proof
+- Lifecycle registry endpoint: https://dynamicfeed.ai/.well-known/signing-key-registry.json
+- Active-key compatibility endpoint: https://dynamicfeed.ai/.well-known/keys
 
 ## License
 
 MIT.
-
-## Reliability axis
-
-Beyond signing *what* was said, the [`reliability/`](reliability) toolkit grades *how much to believe it*: the OKF reliability object (schema + zero-dep Python & JS validators), enforcing `signed != verified`. See [reliability/README.md](reliability/README.md).

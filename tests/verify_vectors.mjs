@@ -12,6 +12,9 @@ import { verify, canonical } from '../clients/js/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const VEC = path.join(here, 'vectors');
+const lifecycleRegistry = JSON.parse(fs.readFileSync(
+  path.join(here, '../SIGNING_KEY_LIFECYCLE.json'), 'utf8'
+));
 let fails = 0;
 
 const cv = JSON.parse(fs.readFileSync(path.join(VEC, 'canonicalization.json'), 'utf8'));
@@ -24,21 +27,14 @@ for (const v of cv.vectors) {
 }
 
 const sv = JSON.parse(fs.readFileSync(path.join(VEC, 'signed-awareness.json'), 'utf8'));
-const a = await verify(sv.authentic.envelope_text, { jwks: sv.public_keys });  // RAW text — byte-fidelity
-const t = await verify(sv.tampered.envelope_text, { jwks: sv.public_keys });
-fails += (!a.ok) + (t.ok === true);
-console.log(`  [${a.ok ? 'PASS' : 'FAIL'}] signature · authentic envelope verifies`);
-console.log(`  [${!t.ok ? 'PASS' : 'FAIL'}] signature · tampered envelope rejected`);
+const a = await verify(sv.authentic.envelope_text, { lifecycleRegistry });  // RAW text — byte-fidelity
+const t = await verify(sv.tampered.envelope_text, { lifecycleRegistry });
+const historicalOk = a.cryptoValid === true && a.ok === false && a.lifecycleStatus === 'compromised';
+const tamperOk = t.cryptoValid === false && t.ok === false;
+fails += (!historicalOk) + (!tamperOk);
+console.log(`  [${historicalOk ? 'PASS' : 'FAIL'}] signature · historical bytes verify, compromised lifecycle rejects`);
+console.log(`  [${tamperOk ? 'PASS' : 'FAIL'}] signature · tampered envelope rejected`);
 
-const av = JSON.parse(fs.readFileSync(path.join(VEC, 'signed-answer-anchored.json'), 'utf8'));
-const aa = await verify(av.authentic.envelope_text, { jwks: av.public_keys });
-const am = await verify(av.anchor_modified.envelope_text, { jwks: av.public_keys });
-const at = await verify(av.tampered.envelope_text, { jwks: av.public_keys });
-fails += (!aa.ok) + (!am.ok) + (at.ok === true);
-console.log(`  [${aa.ok ? 'PASS' : 'FAIL'}] anchored answer · authentic verifies (anchor stripped)`);
-console.log(`  [${am.ok ? 'PASS' : 'FAIL'}] anchored answer · anchor-modified STILL verifies (anchor is unsigned)`);
-console.log(`  [${!at.ok ? 'PASS' : 'FAIL'}] anchored answer · tampered signed field rejected`);
-
-const n = cv.vectors.length + 5;
+const n = cv.vectors.length + 2;
 console.log(`\n${fails ? '✗ ' + fails + ' FAILED' : '✓ ALL ' + n + ' VECTORS PASS'}`);
 process.exit(fails ? 1 : 0);

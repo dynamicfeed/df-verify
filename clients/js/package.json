@@ -1,59 +1,50 @@
 {
   "name": "@dynamicfeed/verify",
-  "version": "1.0.1",
-  "description": "Independently verify Dynamic Feed (DF-VERIFY/1) Ed25519-signed responses, in any JavaScript runtime. No account, no runtime trust in the issuer.",
+  "version": "1.0.2",
+  "description": "Verify Dynamic Feed DF-VERIFY/1 signature bytes and signing-key lifecycle policy.",
   "type": "module",
   "main": "index.js",
-  "module": "index.js",
   "types": "index.d.ts",
   "exports": {
     ".": {
       "types": "./index.d.ts",
-      "import": "./index.js"
+      "default": "./index.js"
     }
   },
   "bin": {
-    "dynamicfeed-verify": "./cli.js"
+    "dynamicfeed-verify": "cli.js"
+  },
+  "scripts": {
+    "test": "node tests/anchor.test.js"
   },
   "files": [
     "index.js",
-    "cli.js",
     "index.d.ts",
+    "cli.js",
     "README.md"
   ],
-  "scripts": {
-    "test": "node ../../tests/verify_vectors.mjs"
-  },
-  "dependencies": {
-    "@noble/ed25519": "^2.0.0"
-  },
-  "engines": {
-    "node": ">=18"
-  },
   "keywords": [
-    "ed25519",
-    "signature-verification",
-    "data-provenance",
-    "offline-verification",
-    "verifiable-data",
-    "tamper-evident",
-    "attestation",
-    "mcp",
-    "ai-agents",
     "dynamic-feed",
-    "df-verify"
+    "df-verify",
+    "ed25519",
+    "verification",
+    "provenance",
+    "attestation",
+    "ai",
+    "agents"
   ],
   "homepage": "https://dynamicfeed.ai/standard",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dynamicfeed/df-verify.git",
-    "directory": "clients/js"
-  },
-  "bugs": {
-    "url": "https://github.com/dynamicfeed/df-verify/issues"
+    "url": "git+https://github.com/dynamicfeed/df-verify.git"
   },
   "license": "MIT",
-  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.0.0"
+  },
   "publishConfig": {
     "access": "public"
   }

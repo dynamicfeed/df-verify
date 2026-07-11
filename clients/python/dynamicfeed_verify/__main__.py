@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import sys
 
-from . import DEFAULT_BASE, verify, verify_live
+from . import DEFAULT_BASE, _strict_loads, verify, verify_live
 
 
 def main() -> int:
@@ -12,11 +12,11 @@ def main() -> int:
     if args and args[0] in ("-h", "--help"):
         print("usage:\n"
               "  dynamicfeed-verify [BASE_URL]          fetch a live signed verdict and verify it\n"
-              "  dynamicfeed-verify - < response.json   verify a saved signed response (key still fetched)\n"
+              "  dynamicfeed-verify - [BASE_URL] < response.json   verify saved bytes with lifecycle policy\n"
               "  default BASE_URL = https://dynamicfeed.ai   ·   spec: https://dynamicfeed.ai/standard")
         return 0
     if args and args[0] == "-":
-        env = json.load(sys.stdin)
+        env = _strict_loads(sys.stdin.read())
         base = args[1].rstrip("/") if len(args) > 1 else DEFAULT_BASE
         res = verify(env, base=base)
     else:
@@ -31,8 +31,12 @@ def main() -> int:
             extra += f" · snapshot={res['snapshot_id']}"
         if res.get("ephemeral"):
             extra += " · EPHEMERAL key"
-        print(f"✅ VALID — key={res['key_id']}{extra}")
+        print(f"✅ POLICY ACCEPTED — signature valid · lifecycle={res.get('lifecycle_status')} · key={res['key_id']}{extra}")
         return 0
+    if res.get("crypto_valid"):
+        print(f"△ CRYPTOGRAPHICALLY VALID, LIFECYCLE REJECTED — key={res.get('key_id')} · "
+              f"status={res.get('lifecycle_status', 'unknown')} · {res.get('error')}")
+        return 1
     print(f"✗ INVALID — {res.get('error')}")
     return 1
 

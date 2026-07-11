@@ -1,13 +1,9 @@
-// AwarenessClient.cs — reference C# client for the Dynamic Feed robot situational-awareness API.
-// Target: .NET 6+. No external packages required for the call itself (System.Text.Json + HttpClient).
-// Signature verification (optional) needs BouncyCastle — see the note at the bottom.
+// AwarenessClient.cs — QUARANTINED transport-only C# sample.
 //
-//   var df = new DynamicFeed.AwarenessClient();
-//   string verdict = await df.VerdictAsync("aerial", 51.5, -0.12);   // "go" | "caution" | "no-go"
-//   if (verdict != "go") AbortTakeoff();
-//
-// The server NEVER hangs (hard deadline; degrades to "caution"), and this client mirrors that
-// fail-safe contract: any error returns "caution", never an exception into your control loop.
+// This file does NOT implement DF-VERIFY/1 canonicalization, key-id binding, signing-key
+// lifecycle validation, or registry anti-rollback. It therefore MUST NOT return an actionable
+// verdict and is not a reference verifier. Use the Python, JavaScript, or Rust implementation
+// until a conformance-tested C# lifecycle-aware verifier exists.
 
 using System;
 using System.Net.Http;
@@ -18,6 +14,10 @@ using System.Threading.Tasks;
 
 namespace DynamicFeed
 {
+    /// <summary>
+    /// Transport-only access to an unverified awareness response. No method in this class may be
+    /// used to authorize physical actuation, trading, filing, or another consequential action.
+    /// </summary>
     public sealed class AwarenessClient
     {
         private static readonly HttpClient Http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
@@ -26,8 +26,11 @@ namespace DynamicFeed
         public AwarenessClient(string baseUrl = "https://dynamicfeed.ai")
             => _baseUrl = baseUrl.TrimEnd('/');
 
-        /// <summary>Full awareness snapshot (verdict + grounded facts + Ed25519 signature) as JSON.</summary>
-        public async Task<JsonElement> AwarenessAsync(
+        /// <summary>
+        /// Fetches raw JSON for inspection only. The returned object has not been verified and
+        /// carries no trust or lifecycle verdict.
+        /// </summary>
+        public async Task<JsonElement> FetchUnverifiedAwarenessAsync(
             string robotClass, double lat, double lon, double? altM = null,
             CancellationToken ct = default)
         {
@@ -44,37 +47,17 @@ namespace DynamicFeed
             return JsonDocument.Parse(text).RootElement.Clone();
         }
 
-        /// <summary>
-        /// Returns "go" | "caution" | "no-go". Fail-safe: on ANY error (timeout, network, parse) it
-        /// returns "caution" rather than throwing — safe to call from a real-time control loop.
-        /// </summary>
-        public async Task<string> VerdictAsync(
+        [Obsolete("Quarantined: no lifecycle-aware C# verifier exists. Use FetchUnverifiedAwarenessAsync only for inspection.")]
+        public Task<JsonElement> AwarenessAsync(
+            string robotClass, double lat, double lon, double? altM = null,
+            CancellationToken ct = default)
+            => throw new NotSupportedException(
+                "C# policy verification is quarantined; use a conformance-tested Python, JavaScript, or Rust verifier.");
+
+        [Obsolete("Quarantined: an unverified network verdict must never authorize an action.")]
+        public Task<string> VerdictAsync(
             string robotClass, double lat, double lon, CancellationToken ct = default)
-        {
-            try
-            {
-                var root = await AwarenessAsync(robotClass, lat, lon, null, ct);
-                return root.GetProperty("verdict").GetProperty("status").GetString() ?? "caution";
-            }
-            catch
-            {
-                return "caution";
-            }
-        }
+            => throw new NotSupportedException(
+                "C# verdict extraction is disabled until lifecycle-aware verification is implemented and tested.");
     }
 }
-
-// ── Signature verification (optional, recommended for tamper-evidence) ────────────────────────────
-// Every response carries: "signature": { "alg":"Ed25519", "key_id":"...", "canonicalization":
-// "json-sorted-compact", "sig":"<base64url>" }.
-// To verify:
-//   1. GET https://dynamicfeed.ai/.well-known/keys  →  { "<key_id>": "<base64url 32-byte raw public key>" }.
-//   2. Re-serialize the response WITHOUT its "signature" and "anchor" fields as canonical JSON
-//      (`anchor` is added after signing so any holder can independently RFC 3161 timestamp the body)
-//      (UTF-8, keys sorted, separators "," and ":").
-//   3. Verify with BouncyCastle:
-//        var verifier = new Org.BouncyCastle.Crypto.Signers.Ed25519Signer();
-//        verifier.Init(false, new Ed25519PublicKeyParameters(rawPublicKeyBytes, 0));
-//        verifier.BlockUpdate(canonicalBytes, 0, canonicalBytes.Length);
-//        bool ok = verifier.VerifySignature(signatureBytes);
-//   If ok is false, the snapshot was altered — reject it.
