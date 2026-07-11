@@ -7,6 +7,7 @@ captured live from dynamicfeed.ai (2026-07-09); the key df-ed25519-… is persis
 
 Run:  python -m pytest clients/python/tests   (or)   python clients/python/tests/test_anchor.py
 """
+import base64
 import copy
 import json
 import pathlib
@@ -162,6 +163,38 @@ def test_signature_text_malleability_and_wrong_decoded_lengths_fail_closed():
         )
         assert result["ok"] is False and result["crypto_valid"] is False
         assert "encoding" in result["error"]
+
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
+    def mutate_unused_bits(encoded: str, unused_bits: int) -> str:
+        unpadded = encoded.rstrip("=")
+        padding = encoded[len(unpadded):]
+        last_index = alphabet.index(unpadded[-1])
+        assert last_index & ((1 << unused_bits) - 1) == 0
+        return unpadded[:-1] + alphabet[last_index + 1] + padding
+
+    # A permissive decoder treats each mutation as the same bytes. The verifier must reject the
+    # alternate spelling before Ed25519 verification because the signature block is unsigned.
+    malleable_signature = mutate_unused_bits(signature_text, 4)
+    assert base64.urlsafe_b64decode(malleable_signature) == base64.urlsafe_b64decode(signature_text)
+    mutated = copy.deepcopy(env)
+    mutated["signature"]["sig"] = malleable_signature
+    result = verify(mutated, lifecycle_registry=REGISTRY, registry_source_authenticated=True)
+    assert result["ok"] is False and result["crypto_valid"] is False
+    assert "non-canonical base64url encoding" in result["error"]
+
+    key_id = env["signature"]["key_id"]
+    public_key = REGISTRY["public_keys"][key_id]
+    malleable_public_key = mutate_unused_bits(public_key, 2)
+    assert base64.urlsafe_b64decode(malleable_public_key) == base64.urlsafe_b64decode(public_key)
+    malformed_registry = copy.deepcopy(REGISTRY)
+    malformed_registry["public_keys"][key_id] = malleable_public_key
+    try:
+        validate_lifecycle_registry(malformed_registry)
+    except ValueError as exc:
+        assert "non-canonical base64url encoding" in str(exc)
+    else:
+        raise AssertionError("non-canonical public-key spelling accepted")
 
     for encoded, expected_length in (("AA", 64), ("AA", 32)):
         try:

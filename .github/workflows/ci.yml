@@ -29,6 +29,13 @@ jobs:
         run: python3 tests/verify_vectors.py
       - name: package build
         run: python -m build clients/python
+      - name: clean-wheel lifecycle and encoding regressions
+        run: |
+          clean_venv="$RUNNER_TEMP/dynamicfeed-verify-wheel"
+          python -m venv "$clean_venv"
+          "$clean_venv/bin/pip" install pytest clients/python/dist/*.whl
+          cd "$RUNNER_TEMP"
+          "$clean_venv/bin/python" -m pytest "$GITHUB_WORKSPACE/clients/python/tests"
       - name: notebook JSON integrity
         run: python -m json.tool examples/openai/grounding_on_verifiable_live_data.ipynb >/dev/null
       - name: reliability self-test
@@ -47,9 +54,15 @@ jobs:
         run: npm test --prefix clients/js
       - name: conformance vectors
         run: node tests/verify_vectors.mjs
-      - name: package contents
-        working-directory: clients/js
-        run: npm pack --dry-run
+      - name: package and test clean tarball
+        run: |
+          package_dir="$RUNNER_TEMP/dynamicfeed-verify-package"
+          consumer_dir="$RUNNER_TEMP/dynamicfeed-verify-consumer"
+          mkdir -p "$package_dir" "$consumer_dir"
+          (cd clients/js && npm pack --pack-destination "$package_dir")
+          npm install --prefix "$consumer_dir" "$package_dir"/*.tgz
+          DF_VERIFY_PACKAGE_ENTRY="$consumer_dir/node_modules/@dynamicfeed/verify/index.js" \
+            node clients/js/tests/anchor.test.js
       - name: reliability self-test
         run: node reliability/verify_reliability.js --selftest
 

@@ -49,6 +49,23 @@ fn generated_active_material() -> (String, String) {
     (envelope, registry)
 }
 
+fn mutate_unused_bits(encoded: &str, unused_bits: u8) -> String {
+    const ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    let padding = encoded.len() - encoded.trim_end_matches('=').len();
+    let core = encoded.trim_end_matches('=');
+    let last = *core.as_bytes().last().unwrap();
+    let index = ALPHABET
+        .iter()
+        .position(|candidate| *candidate == last)
+        .unwrap();
+    assert_eq!(index & ((1usize << unused_bits) - 1), 0);
+    let mut mutated = core.as_bytes().to_vec();
+    *mutated.last_mut().unwrap() = ALPHABET[index + 1];
+    let mut result = String::from_utf8(mutated).unwrap();
+    result.push_str(&"=".repeat(padding));
+    result
+}
+
 #[test]
 fn compromised_fixture_is_crypto_valid_but_policy_rejected() {
     assert!(
@@ -170,4 +187,31 @@ fn duplicate_keys_and_rewritten_signature_metadata_fail_closed() {
     let mut malformed = envelope.clone();
     malformed.replace_range(signature_start..signature_end, "!!!!");
     assert!(verify_envelope(&malformed, &public).is_err());
+}
+
+#[test]
+fn noncanonical_unused_bits_and_wrong_lengths_fail_closed() {
+    let (envelope, registry_json) = generated_active_material();
+    let public = URL_SAFE_NO_PAD.encode(
+        SigningKey::from_bytes(&[7u8; 32])
+            .verifying_key()
+            .to_bytes(),
+    );
+    let signature_start = envelope.find("\"sig\":\"").unwrap() + 7;
+    let signature_end = signature_start + envelope[signature_start..].find('"').unwrap();
+    let signature = &envelope[signature_start..signature_end];
+
+    let malleable_signature = mutate_unused_bits(signature, 4);
+    let mut malformed_envelope = envelope.clone();
+    malformed_envelope.replace_range(signature_start..signature_end, malleable_signature.as_str());
+    assert!(verify_envelope(&malformed_envelope, &public).is_err());
+
+    let malleable_public = mutate_unused_bits(&public, 2);
+    assert!(verify_envelope(&envelope, &malleable_public).is_err());
+    let malformed_registry = registry_json.replacen(&public, &malleable_public, 1);
+    assert!(LifecycleRegistry::parse(&malformed_registry).is_err());
+
+    let short_signature = envelope.replacen(signature, "AA", 1);
+    assert!(verify_envelope(&short_signature, &public).is_err());
+    assert!(verify_envelope(&envelope, "AA").is_err());
 }

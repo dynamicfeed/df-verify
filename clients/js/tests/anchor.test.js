@@ -8,9 +8,14 @@
 // Run:  node clients/js/tests/anchor.test.js
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { validateLifecycleRegistry, verify } from '../index.js';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
+
+const verifierEntry = process.env.DF_VERIFY_PACKAGE_ENTRY;
+const verifierModule = verifierEntry
+  ? await import(pathToFileURL(resolve(verifierEntry)).href)
+  : await import('../index.js');
+const { validateLifecycleRegistry, verify } = verifierModule;
 
 const FIX = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const lifecycleRegistry = JSON.parse(readFileSync(
