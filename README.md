@@ -1,7 +1,42 @@
-# DF-VERIFY/1 verifier sources
+# Fluxdyne Verify
 
-Reference verifier source for Dynamic Feed signed envelopes and signing-key lifecycle policy.
-The security boundary is deliberately split:
+Open-source verifier for Ed25519-signed AI evidence receipts. Fluxdyne Verify parses a signed
+envelope, checks the signature over canonical bytes, binds it to a key ID, and — separately from the
+cryptography — decides whether that signer is acceptable under a validated signing-key lifecycle
+policy. A valid signature proves integrity under a key; it does not prove truth, safety, or legal
+compliance. Reference implementations ship for Python, JavaScript/TypeScript and Rust.
+
+**Part of Fluxdyne — The Trust & Audit Protocol for Enterprise AI.**
+[fluxdyne.com](https://fluxdyne.com) · [Verify a receipt](https://fluxdyne.com/verify)
+
+## Quickstart
+
+```bash
+pip install dynamicfeed-verify      # Python
+npm install @dynamicfeed/verify     # JavaScript / TypeScript
+cargo add dynamicfeed-verify        # Rust
+```
+
+```python
+import json
+from dynamicfeed_verify import verify
+
+registry = json.load(open("SIGNING_KEY_LIFECYCLE.json"))
+result = verify(
+    envelope,
+    lifecycle_registry=registry,
+    registry_source_authenticated=True,  # caller authenticated this pinned file
+)
+if not result["ok"]:
+    raise RuntimeError(result["error"])
+```
+
+Per-language usage: [Minimal policy-aware use](#minimal-policy-aware-use).
+Building and testing from source: [Verify from source](#verify-from-source).
+
+## Security boundary
+
+The boundary is deliberately split:
 
 - `crypto_valid` means the Ed25519 signature, exact metadata, canonical bytes, and key-ID binding
   passed;
